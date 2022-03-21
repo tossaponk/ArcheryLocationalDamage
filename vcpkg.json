@@ -1,0 +1,12 @@
+{
+  "name": "archerylocationaldamage",
+  "version-string": "2.0",
+  "description": "Add locational damage for archery",
+  "dependencies": [
+    "boost-stl-interfaces",
+    "rsm-binary-io",
+    "spdlog",
+    "xbyak",
+	"simpleini"
+  ]
+}
