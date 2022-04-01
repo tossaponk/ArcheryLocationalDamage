@@ -4,6 +4,16 @@ set(SOURCE_DIR "${ROOT_DIR}/src")
 set(SOURCE_FILES
 	"${SOURCE_DIR}/main.cpp"
 	"${SOURCE_DIR}/PCH.h"
+	"${SOURCE_DIR}/Offsets.h"
+	"${SOURCE_DIR}/FloatingDamage.h"
+	"${SOURCE_DIR}/FloatingDamage.cpp"
+	"${SOURCE_DIR}/LocationalDamage.h"
+	"${SOURCE_DIR}/LocationalDamage.cpp"
+	"${SOURCE_DIR}/Hooks.h"
+	"${SOURCE_DIR}/Hooks.cpp"
+	"${SOURCE_DIR}/Settings.h"
+	"${SOURCE_DIR}/Settings.cpp"
+	"${SOURCE_DIR}/Utils.h"
 )
 
 source_group(TREE "${ROOT_DIR}" FILES ${SOURCE_FILES})
