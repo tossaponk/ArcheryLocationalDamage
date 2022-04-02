@@ -37,6 +37,10 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 		a_projectile->formType == RE::FormType::ProjectileArrow &&
 		a_target->formType == RE::FormType::ActorCharacter )
 	{
+		// Skip if projectile has no life remaining (eg. during VATS hitscan)
+		if( a_projectile->lifeRemaining == 0 )
+			return;
+
 		RE::Actor* shooterActor = nullptr;
 		auto shooter = a_projectile->shooter.get();
 		if( shooter )
