@@ -100,6 +100,49 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 						shouldApplyLocationalDamage = !ActorHasKeywords( targetActor, keywords );
 					}
 
+					// Check for race
+					if( shouldApplyLocationalDamage )
+					{
+						auto targetRace = targetActor->GetRace()->GetFormEditorID();
+						if( targetRace )
+						{
+							if( locationalSetting.raceInclude.size() > 0 )
+							{
+								shouldApplyLocationalDamage = false;
+								for( auto& race : locationalSetting.raceInclude )
+								{
+									std::regex raceRegex( race );
+									if( std::regex_match( targetRace, raceRegex ) )
+									{
+										shouldApplyLocationalDamage = true;
+										break;
+									}
+								}
+							}
+
+							if( locationalSetting.raceExclude.size() > 0 && shouldApplyLocationalDamage )
+							{
+								for( auto& race : locationalSetting.raceExclude )
+								{
+									std::regex raceRegex( race );
+									if( std::regex_match( targetRace, raceRegex ) )
+									{
+										shouldApplyLocationalDamage = false;
+										break;
+									}
+								}
+							}
+						}
+					}
+
+					// Check for sex
+					if( shouldApplyLocationalDamage && locationalSetting.sex != RE::SEX::kNone )
+					{
+						auto targetSex = targetActor->GetActorBase()->GetSex();
+						if( targetSex != RE::SEX::kNone )
+							shouldApplyLocationalDamage = targetSex == locationalSetting.sex;
+					}
+
 					// Final success chance check
 					float successHPFactor = GetHPFactor( targetActor, locationalSetting.successHPFactor, g_fLastHitDamage, locationalSetting.successHPFactorCap );
 					int finalSuccessChance = (int)(locationalSetting.successChance * successHPFactor);

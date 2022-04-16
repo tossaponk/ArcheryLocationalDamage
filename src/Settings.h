@@ -23,8 +23,11 @@ struct LocationalDamageSetting
 	std::string								impactData;
 	std::regex								regexp;
 	std::vector<Effect>						effects;
+	RE::SEX									sex;
 	std::vector<std::vector<std::string>>	keywordInclude;
 	std::vector<std::vector<std::string>>	keywordExclude;
+	std::vector<std::string>				raceInclude;
+	std::vector<std::string>				raceExclude;
 
 	LocationalDamageSetting()
 	{

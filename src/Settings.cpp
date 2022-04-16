@@ -72,6 +72,12 @@ void Settings::Load()
 			setting.sound				= iniFile.GetValue( sectionIter.pItem, "HitSound", "" );
 			std::string regexp			= iniFile.GetValue( sectionIter.pItem, "Regexp", "" );
 
+			auto sex = iniFile.GetValue( sectionIter.pItem, "Sex", "" );
+			if( sex[ 0 ] != '\0' )
+				setting.sex = _strcmpi( sex, "M" ) == 0 ? RE::SEX::kMale : RE::SEX::kFemale;
+			else
+				setting.sex = RE::SEX::kNone;
+
 			setting.enable = regexp != "";
 			setting.regexp = regexp;
 
@@ -97,6 +103,10 @@ void Settings::Load()
 					auto keywords = split( iter->second, "[\\s,]+" );
 					setting.keywordExclude.push_back( keywords );
 				}
+				else if( currentKey == "RaceInclude" && *iter->second != 0 )
+					setting.raceInclude.push_back( iter->second );
+				else if( currentKey == "RaceExclude" && *iter->second != 0 )
+					setting.raceExclude.push_back( iter->second );
 			}
 
 			g_LocationalDamageSettings.push_back( setting );
