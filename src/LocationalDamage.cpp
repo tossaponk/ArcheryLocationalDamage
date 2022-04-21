@@ -70,6 +70,7 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 		
 		if( hitPart )
 		{
+			HitDataOverride hitDataOverride;
 			auto targetActor		= (RE::Actor*)a_target;
 			bool locationHit		= false;
 			bool shooterIsPlayer	= shooterActor && shooterActor->IsPlayerRef();
@@ -81,82 +82,47 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 
 			for( auto& locationalSetting : g_LocationalDamageSettings )
 			{
-				if( locationalSetting.enable && 
+				if( locationalSetting.enable &&
 					std::regex_match( hitPart->name.c_str(), locationalSetting.regexp ) )
 				{
-					// Default to true if no keyword include specified
-					bool actorHasIncludeKeywords = locationalSetting.keywordInclude.size() == 0;
-					bool magicHasIncludeKeywords = locationalSetting.magicInclude.size() == 0;
+					// Default to true if there is no filter used
+						bool shouldApplyLocationalDamage = locationalSetting.filterInclude.size() == 0;
 
 					// Check if the actor actually has a keyword
-					for( auto& keywords : locationalSetting.keywordInclude )
+					for( auto& filter : locationalSetting.filterInclude )
 					{
-						actorHasIncludeKeywords = ActorHasKeywords( targetActor, keywords );
-						if( actorHasIncludeKeywords ) break;
+						if( filter.Evaluate( targetActor ) )
+						{
+							shouldApplyLocationalDamage = true;
+							break;
+						}
 					}
 
-					// Check for active effects keyword include
-					for( auto& keywords : locationalSetting.magicInclude )
+					// Check for exclusion filter
+					if( shouldApplyLocationalDamage && locationalSetting.filterExclude.size() > 0 )
 					{
-						magicHasIncludeKeywords = ActiveEffectsHasKeywords( targetActor, keywords );
-						if( magicHasIncludeKeywords ) break;
-					}
-
-					bool shouldApplyLocationalDamage = actorHasIncludeKeywords || magicHasIncludeKeywords;
-					if( shouldApplyLocationalDamage )
-					{
-						bool actorHasExcludeKeywords = locationalSetting.keywordExclude.size() != 0;
-						bool magicHasExcludeKeywords = locationalSetting.magicExclude.size() != 0;
-
-						// Check for keyword exclusion
-						for( auto& keywords : locationalSetting.keywordExclude )
+						for( auto& filter : locationalSetting.filterExclude )
 						{
-							actorHasExcludeKeywords = ActorHasKeywords( targetActor, keywords );
-							if( actorHasExcludeKeywords ) break;
+							if( filter.Evaluate( targetActor ) )
+							{
+								shouldApplyLocationalDamage = false;
+								break;
+							}
 						}
-
-						for( auto& keywords : locationalSetting.magicExclude )
-						{
-							magicHasExcludeKeywords = ActiveEffectsHasKeywords( targetActor, keywords );
-							if( magicHasExcludeKeywords ) break;
-						}
-
-						shouldApplyLocationalDamage = !( actorHasExcludeKeywords || magicHasExcludeKeywords );
 					}
 
 					// Check for race
-					if( shouldApplyLocationalDamage )
+					if( shouldApplyLocationalDamage && locationalSetting.race.size() > 0 )
 					{
-						auto targetRace = targetActor->GetRace()->GetFormEditorID();
-						if( targetRace )
+						shouldApplyLocationalDamage = false;
+						for( auto& raceFilter : locationalSetting.race )
 						{
-							if( locationalSetting.raceInclude.size() > 0 )
-							{
-								shouldApplyLocationalDamage = false;
-								for( auto& race : locationalSetting.raceInclude )
-								{
-									std::regex raceRegex( race );
-									if( std::regex_match( targetRace, raceRegex ) )
-									{
-										shouldApplyLocationalDamage = true;
-										break;
-									}
-								}
-							}
+							shouldApplyLocationalDamage = raceFilter.Evaluate( targetActor->GetRace() );
 
-							if( locationalSetting.raceExclude.size() > 0 && shouldApplyLocationalDamage )
-							{
-								for( auto& race : locationalSetting.raceExclude )
-								{
-									std::regex raceRegex( race );
-									if( std::regex_match( targetRace, raceRegex ) )
-									{
-										shouldApplyLocationalDamage = false;
-										break;
-									}
-								}
-							}
+							if( shouldApplyLocationalDamage )
+								break;
 						}
+							
 					}
 
 					// Check for sex
@@ -174,11 +140,10 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 					{
 						std::lock_guard<std::mutex> lock( mutex );
 
-						HitDataOverride hitDataOverride;
 						hitDataOverride.aggressor	= shooterActor;
 						hitDataOverride.target		= a_target;
 						hitDataOverride.location	= *a_location;
-						hitDataOverride.damageMult	= locationalSetting.damageMult;
+						hitDataOverride.damageMult	*= locationalSetting.damageMult;
 
 						// Set expiration time to prevent build up of unprocessed hits (1/10 sec)
 						QueryPerformanceCounter( (LARGE_INTEGER*)&hitDataOverride.expireTimestamp );
@@ -309,21 +274,24 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 							}
 						}
 
-						bool isFPS = false;
-						auto camera = RE::PlayerCamera::GetSingleton();
-						if( camera && targetIsPlayer )
-							isFPS = camera->currentState->id == RE::CameraState::kFirstPerson;
-
-						// Flush floating text buffer
-						float alpha = (shooterIsPlayer || targetIsPlayer) ? 100.0f : 50.0f;
-						FloatingDamage::Flush( a_target, isFPS ? NULL : a_location, g_fFloatingOffsetX, g_fFloatingOffsetY, alpha );
-
-						g_HitDataOverride.push_back( hitDataOverride );
-
-						break;
+						// Stop processing further locations if not required to do so.
+						if( !locationalSetting.shouldContinue )
+							break;
 					}
 				}
 			}
+
+			if( hitDataOverride.aggressor )
+				g_HitDataOverride.push_back( hitDataOverride );
+
+			bool isFPS = false;
+			auto camera = RE::PlayerCamera::GetSingleton();
+			if( camera && targetIsPlayer )
+				isFPS = camera->currentState->id == RE::CameraState::kFirstPerson;
+
+			// Flush floating text buffer
+			float alpha = (shooterIsPlayer || targetIsPlayer) ? 100.0f : 50.0f;
+			FloatingDamage::Flush( a_target, isFPS ? NULL : a_location, g_fFloatingOffsetX, g_fFloatingOffsetY, alpha );
 
 			if( g_bDebugNotification )
 			{

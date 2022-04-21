@@ -4,11 +4,156 @@
 
 struct StringFilter
 {
-	std::string		str;
-	bool			isNegate = false;
+	enum class Type
+	{
+		kNone = -1,
+		kActorKeyword,
+		kArmorKeyword,
+		kMagicKeyword,
+		kFormEditorID,
+
+		kTotal
+	};
+
+	std::string						str;
+	Type							type = Type::kFormEditorID;
+	bool							isNegate = false;
 };
 
-using StringFilterList = std::vector<StringFilter>;
+class StringFilterList
+{
+	enum class Flag
+	{
+		kActorKeyword = 1 << (uint32_t)StringFilter::Type::kActorKeyword,
+		kArmorKeyword = 1 << (uint32_t)StringFilter::Type::kArmorKeyword,
+		kMagicKeyword = 1 << (uint32_t)StringFilter::Type::kMagicKeyword,
+		kFormEditorID = 1 << (uint32_t)StringFilter::Type::kFormEditorID,
+	};
+
+	std::vector<StringFilter>		data;
+	stl::enumeration<Flag,uint32_t>	flags;
+
+public:
+	void Add( StringFilter a_filter )
+	{
+		data.push_back( a_filter );
+		flags.set( (Flag)( 1 << (uint32_t)a_filter.type ) );
+	}
+
+	bool HasFilterType( StringFilter::Type a_type )
+	{
+		return flags.any( (Flag)( 1 << (uint32_t)a_type ) );
+	}
+
+	bool FormHasKeywords( RE::BGSKeywordForm* a_form, StringFilter::Type a_type = StringFilter::Type::kNone )
+	{
+		for( auto& keyword : data )
+		{
+			bool hasKeyword = a_form->HasKeywordString( keyword.str );
+
+			if( keyword.isNegate )
+				hasKeyword = !hasKeyword;
+
+			if( !hasKeyword && (keyword.type == a_type || a_type == StringFilter::Type::kNone ) )
+				return false;
+		}
+
+		return true;
+	}
+
+	bool FormEditorIDMatch( RE::TESForm* a_form )
+	{
+		for( auto& keyword : data )
+		{
+			if( keyword.type == StringFilter::Type::kFormEditorID )
+			{
+				std::regex filter( keyword.str );
+				if( !std::regex_match( a_form->GetFormEditorID(), filter ) )
+					return false;
+			}
+		}
+		
+		return true;
+	}
+
+	bool ActiveEffectsHasKeywords( RE::Actor* a_actor )
+	{
+		if( !HasFilterType( StringFilter::Type::kMagicKeyword ) )
+			return true;
+
+		// Search active effects if both actor and armor has none of the keyword
+		auto activeEffects = a_actor->GetActiveEffectList();
+		for( auto activeEffect : *activeEffects )
+		{
+			// Effect must active to count for keyword matching
+			if( activeEffect->flags.none( RE::ActiveEffect::Flag::kInactive ) &&
+				FormHasKeywords( activeEffect->effect->baseEffect, StringFilter::Type::kMagicKeyword ) )
+				return true;
+		}
+
+		return false;
+	}
+
+	bool ActorHasKeywords( RE::Actor* a_actor )
+	{
+		if( !HasFilterType( StringFilter::Type::kActorKeyword ) )
+			return true;
+
+		for( auto& keyword : data )
+		{
+			bool hasKeyword = a_actor->HasKeywordString( keyword.str );
+			if( keyword.isNegate )
+				hasKeyword = !hasKeyword;
+
+			if( !hasKeyword && keyword.type == StringFilter::Type::kActorKeyword )
+				return false;
+		}
+
+		return true;
+	}
+
+	bool ArmorHasKeywords( RE::Actor* a_actor )
+	{
+		if( !HasFilterType( StringFilter::Type::kArmorKeyword ) )
+			return true;
+
+		const auto inv = a_actor->GetInventory([](RE::TESBoundObject& a_object) {
+			return a_object.IsArmor();
+			});
+
+		for( const auto& [item, invData] : inv ) 
+		{
+			const auto& [count, entry] = invData;
+			if( count > 0 && entry->IsWorn() ) 
+			{
+				const auto armor = item->As<RE::TESObjectARMO>();
+				if( armor && FormHasKeywords( armor, StringFilter::Type::kArmorKeyword ) ) 
+					return true;
+			}
+		}
+
+		return false;
+	}
+
+	bool Evaluate( RE::TESForm* a_form )
+	{
+		if( a_form->Is( RE::FormType::ActorCharacter ) )
+		{
+			auto actor = static_cast<RE::Actor*>( a_form );
+			bool isActorHasKeyword = ActorHasKeywords( actor );
+			bool isArmorHasKeyword = ArmorHasKeywords( actor );
+			bool isMagicHasKeyword = ActiveEffectsHasKeywords( actor );
+
+			return isActorHasKeyword && isArmorHasKeyword && isMagicHasKeyword;
+		}
+		else if( a_form->Is( RE::FormType::Race ) )
+		{
+			return FormEditorIDMatch( a_form );
+		}
+
+		return false;
+	}
+};
 
 static std::vector<std::string> split( const char* a_input, const char* a_regex ) 
 {
@@ -85,85 +230,6 @@ static RE::NiNode* FindClosestHitNode( RE::NiNode* a_root, RE::NiPoint3* a_pos, 
 
 	a_dist = 1000000;
 	return NULL;
-}
-
-static bool FormHasKeywords( RE::BGSKeywordForm* a_form, StringFilterList& a_keywords, std::regex* a_regex = NULL )
-{
-	for( auto& keyword : a_keywords )
-	{
-		bool hasKeyword = a_form->HasKeywordString( keyword.str );
-
-		if( keyword.isNegate )
-			hasKeyword = !hasKeyword;
-
-		if( !hasKeyword )
-		{
-			// Skip check for current keyword if regex not matched
-			if( a_regex && !std::regex_match( keyword.str, *a_regex ) )
-				continue;
-				
-			return false;
-		}
-	}
-
-	return true;
-}
-
-static bool ActiveEffectsHasKeywords( RE::Actor* a_actor, StringFilterList& a_keywords )
-{
-	// Search active effects if both actor and armor has none of the keyword
-	auto activeEffects = a_actor->GetActiveEffectList();
-	for( auto activeEffect : *activeEffects )
-	{
-		// Effect must active to count for keyword matching
-		if( activeEffect->flags.none( RE::ActiveEffect::Flag::kInactive ) &&
-			FormHasKeywords( activeEffect->effect->baseEffect, a_keywords ) )
-			return true;
-	}
-
-	return false;
-}
-
-static std::regex g_armorKeywordRegex( "Armor.*" );
-static bool ActorHasKeywords( RE::Actor* a_actor, StringFilterList& a_keywords )
-{
-	bool actorHasKeyword	= true;
-	bool armorHasKeyword	= true;
-	bool includeArmor		= false;
-
-	for( auto& keyword : a_keywords )
-	{
-		if( !std::regex_match( keyword.str, g_armorKeywordRegex ) )
-			actorHasKeyword = actorHasKeyword && a_actor->HasKeywordString( keyword.str );
-		else
-			includeArmor = true;
-	}
-
-	if( includeArmor )
-	{
-		armorHasKeyword = false;
-
-		const auto inv = a_actor->GetInventory([](RE::TESBoundObject& a_object) {
-			return a_object.IsArmor();
-			});
-
-		for( const auto& [item, invData] : inv ) 
-		{
-			const auto& [count, entry] = invData;
-			if( count > 0 && entry->IsWorn() ) 
-			{
-				const auto armor = item->As<RE::TESObjectARMO>();
-				if( armor ) 
-				{
-					armorHasKeyword = FormHasKeywords( armor, a_keywords, &g_armorKeywordRegex );
-
-					if( armorHasKeyword ) break;
-				}
-			}
-		}
-	}
-
-	return actorHasKeyword && armorHasKeyword;
 }
 
 #pragma warning(pop)

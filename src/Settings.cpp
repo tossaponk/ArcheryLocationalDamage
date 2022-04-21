@@ -60,6 +60,7 @@ void Settings::Load()
 		{
 			LocationalDamageSetting setting;
 
+			setting.shouldContinue		= iniFile.GetBoolValue( sectionIter.pItem, "Continue", false );
 			setting.damageMult			= (float)iniFile.GetDoubleValue( sectionIter.pItem, "Multiplier", 1.0 );
 			setting.successHPFactor		= (float)iniFile.GetDoubleValue( sectionIter.pItem, "SuccessHPFactor", 0 ) / 100.0f;
 			setting.successChance		= iniFile.GetLongValue( sectionIter.pItem, "SuccessChance", 100 );
@@ -95,18 +96,12 @@ void Settings::Load()
 					SetLocationEffect( setting, effectIdx++, iter->second );
 				else if( currentKey == "EffectChance" )
 					SetLocationChance( setting, chanceIdx++, atoi( iter->second ) );
-				else if( currentKey == "KeywordInclude" && *iter->second != 0 )
-					LocationalDamageSetting::ExtractFilterString( setting.keywordInclude, iter->second );
-				else if( currentKey == "KeywordExclude" && *iter->second != 0 )
-					LocationalDamageSetting::ExtractFilterString( setting.keywordExclude, iter->second );
-				else if( currentKey == "MagicKeywordInclude" && *iter->second != 0 )
-					LocationalDamageSetting::ExtractFilterString( setting.magicInclude, iter->second );
-				else if( currentKey == "MagicKeywordExclude" && *iter->second != 0 )
-					LocationalDamageSetting::ExtractFilterString( setting.magicExclude, iter->second );
-				else if( currentKey == "RaceInclude" && *iter->second != 0 )
-					setting.raceInclude.push_back( iter->second );
-				else if( currentKey == "RaceExclude" && *iter->second != 0 )
-					setting.raceExclude.push_back( iter->second );
+				else if( currentKey == "FilterInclude" && *iter->second != 0 )
+					LocationalDamageSetting::ExtractFilterStrings( setting.filterInclude, iter->second );
+				else if( currentKey == "FilterExclude" && *iter->second != 0 )
+					LocationalDamageSetting::ExtractFilterStrings( setting.filterExclude, iter->second );
+				else if( currentKey == "Race" && *iter->second != 0 )
+					LocationalDamageSetting::ExtractFilterStrings( setting.race, iter->second );
 			}
 
 			g_LocationalDamageSettings.push_back( setting );

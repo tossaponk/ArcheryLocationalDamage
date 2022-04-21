@@ -9,6 +9,7 @@ struct LocationalDamageSetting
 	};
 
 	bool							enable = false;
+	bool							shouldContinue = false;
 	float							damageMult = 1.0f;
 	bool							deflectProjectile = false;
 	int								successChance = 100;
@@ -24,36 +25,49 @@ struct LocationalDamageSetting
 	std::regex						regexp;
 	std::vector<Effect>				effects;
 	RE::SEX							sex;
-	std::vector<StringFilterList>	keywordInclude;
-	std::vector<StringFilterList>	keywordExclude;
-	std::vector<StringFilterList>	magicInclude;
-	std::vector<StringFilterList>	magicExclude;
-	std::vector<std::string>		raceInclude;
-	std::vector<std::string>		raceExclude;
+	std::vector<StringFilterList>	filterInclude;
+	std::vector<StringFilterList>	filterExclude;
+	std::vector<StringFilterList>	race;
 
 	LocationalDamageSetting()
 	{
 		effects.resize( 5 );
 	}
 
-	static void ExtractFilterString( std::vector<StringFilterList>& a_settingList, const char* a_filter )
+	static StringFilter CreateFilterFromString( const char* a_filter )
+	{
+		auto filterOption = split( a_filter, ":" );
+		StringFilter filter;
+		filter.str = a_filter;
+
+		if( filterOption.size() == 2 )
+		{
+			if( filterOption[ 0 ] == "S" )
+				filter.type = StringFilter::Type::kActorKeyword;
+			else if( filterOption[ 0 ] == "A" )
+				filter.type = StringFilter::Type::kArmorKeyword;
+			else if( filterOption[ 0 ] == "M" )
+				filter.type = StringFilter::Type::kMagicKeyword;
+
+			filter.str = filterOption[ 1 ];
+		}
+
+		// Set negate to true and remove a minus from the string if there is one
+		if( filter.str[ 0 ] != NULL && filter.str[ 0 ] == '-' )
+		{
+			filter.isNegate = true;
+			filter.str = filter.str.substr( 1 );
+		}
+
+		return filter;
+	}
+
+	static void ExtractFilterStrings( std::vector<StringFilterList>& a_settingList, const char* a_filter )
 	{
 		auto keywords = split( a_filter, "[\\s,]+" );
 		StringFilterList filterList;
 		for( auto str : keywords )
-		{
-			StringFilter filter;
-			// Set negate to true and remove a minus from the string if there is one
-			if( str.size() > 0 && str[ 0 ] == '-' )
-			{
-				filter.isNegate = true;
-				filter.str = str.substr( 1 );
-			}
-			else
-				filter.str = str;
-
-			filterList.push_back( filter );
-		}
+			filterList.Add( CreateFilterFromString( str.c_str() ) );
 
 		a_settingList.push_back( filterList );
 	}
