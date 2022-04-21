@@ -14,6 +14,7 @@ extern bool g_bAmplifyEnchantment;
 extern bool g_bEnableFloatingText;
 extern bool g_bHitEffectNotification;
 extern bool g_bNPCFloatingNotification;
+extern bool g_bIgnoreHitboxCheck;
 extern float g_fNormalMult;
 extern float g_fDamageMult;
 extern float g_fHPFactor;
@@ -61,7 +62,7 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 		}
 
 		// Search manually if no impact data
-		if( !hitPart )
+		if( !hitPart || g_bIgnoreHitboxCheck )
 		{
 			float hitDist;
 			hitPart = FindClosestHitNode( a_target->Get3D()->AsNode(), a_location, hitDist, a_target->IsPlayerRef() );
@@ -84,20 +85,43 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 					std::regex_match( hitPart->name.c_str(), locationalSetting.regexp ) )
 				{
 					// Default to true if no keyword include specified
-					bool shouldApplyLocationalDamage = locationalSetting.keywordInclude.size() == 0;
+					bool actorHasIncludeKeywords = locationalSetting.keywordInclude.size() == 0;
+					bool magicHasIncludeKeywords = locationalSetting.magicInclude.size() == 0;
 
 					// Check if the actor actually has a keyword
 					for( auto& keywords : locationalSetting.keywordInclude )
 					{
-						shouldApplyLocationalDamage = ActorHasKeywords( targetActor, keywords );
-						if( shouldApplyLocationalDamage ) break;
+						actorHasIncludeKeywords = ActorHasKeywords( targetActor, keywords );
+						if( actorHasIncludeKeywords ) break;
 					}
 
-					// Check for keyword exclusion
-					for( auto& keywords : locationalSetting.keywordExclude )
+					// Check for active effects keyword include
+					for( auto& keywords : locationalSetting.magicInclude )
 					{
-						if( !shouldApplyLocationalDamage ) break;
-						shouldApplyLocationalDamage = !ActorHasKeywords( targetActor, keywords );
+						magicHasIncludeKeywords = ActiveEffectsHasKeywords( targetActor, keywords );
+						if( magicHasIncludeKeywords ) break;
+					}
+
+					bool shouldApplyLocationalDamage = actorHasIncludeKeywords || magicHasIncludeKeywords;
+					if( shouldApplyLocationalDamage )
+					{
+						bool actorHasExcludeKeywords = locationalSetting.keywordExclude.size() != 0;
+						bool magicHasExcludeKeywords = locationalSetting.magicExclude.size() != 0;
+
+						// Check for keyword exclusion
+						for( auto& keywords : locationalSetting.keywordExclude )
+						{
+							actorHasExcludeKeywords = ActorHasKeywords( targetActor, keywords );
+							if( actorHasExcludeKeywords ) break;
+						}
+
+						for( auto& keywords : locationalSetting.magicExclude )
+						{
+							magicHasExcludeKeywords = ActiveEffectsHasKeywords( targetActor, keywords );
+							if( magicHasExcludeKeywords ) break;
+						}
+
+						shouldApplyLocationalDamage = !( actorHasExcludeKeywords || magicHasExcludeKeywords );
 					}
 
 					// Check for race

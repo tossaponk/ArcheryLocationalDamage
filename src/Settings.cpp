@@ -1,5 +1,5 @@
-#include "Settings.h"
 #include "Utils.h"
+#include "Settings.h"
 
 std::vector<LocationalDamageSetting> g_LocationalDamageSettings;
 
@@ -11,6 +11,7 @@ bool g_bAmplifyEnchantment = true;
 bool g_bEnableFloatingText = true;
 bool g_bHitEffectNotification = true;
 bool g_bNPCFloatingNotification = false;
+bool g_bIgnoreHitboxCheck = false;
 float g_fHPFactor = 0.5f;
 float g_fFloatingOffsetX = 0;
 float g_fFloatingOffsetY = 0.05f;
@@ -31,6 +32,7 @@ void Settings::Load()
 	g_nNotificationMode			= iniFile.GetLongValue( "Settings", "HitNotificationMode", NotificationMode::Floating );
 	g_bHitEffectNotification	= iniFile.GetBoolValue( "Settings", "HitEffectNotification", true );
 	g_bNPCFloatingNotification	= iniFile.GetBoolValue( "Settings", "NPCHitNotification", false );
+	g_bIgnoreHitboxCheck		= iniFile.GetBoolValue( "Settings", "IgnoreHitboxCheck", false );
 	g_sExcludeRegexp			= iniFile.GetValue( "Settings", "LocationExclude", "" );
 	g_PlayerNodes				= iniFile.GetValue( "Settings", "PlayerNodeInclude", ".*" );
 	g_fHPFactor					= (float)iniFile.GetDoubleValue( "Settings", "HPFactor", 50 ) / 100.0f;
@@ -94,15 +96,13 @@ void Settings::Load()
 				else if( currentKey == "EffectChance" )
 					SetLocationChance( setting, chanceIdx++, atoi( iter->second ) );
 				else if( currentKey == "KeywordInclude" && *iter->second != 0 )
-				{
-					auto keywords = split( iter->second, "[\\s,]+" );
-					setting.keywordInclude.push_back( keywords );
-				}
+					LocationalDamageSetting::ExtractFilterString( setting.keywordInclude, iter->second );
 				else if( currentKey == "KeywordExclude" && *iter->second != 0 )
-				{
-					auto keywords = split( iter->second, "[\\s,]+" );
-					setting.keywordExclude.push_back( keywords );
-				}
+					LocationalDamageSetting::ExtractFilterString( setting.keywordExclude, iter->second );
+				else if( currentKey == "MagicKeywordInclude" && *iter->second != 0 )
+					LocationalDamageSetting::ExtractFilterString( setting.magicInclude, iter->second );
+				else if( currentKey == "MagicKeywordExclude" && *iter->second != 0 )
+					LocationalDamageSetting::ExtractFilterString( setting.magicExclude, iter->second );
 				else if( currentKey == "RaceInclude" && *iter->second != 0 )
 					setting.raceInclude.push_back( iter->second );
 				else if( currentKey == "RaceExclude" && *iter->second != 0 )

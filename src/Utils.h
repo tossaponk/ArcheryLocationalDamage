@@ -2,6 +2,14 @@
 #pragma warning(push)
 #pragma warning(disable: 4505)
 
+struct StringFilter
+{
+	std::string		str;
+	bool			isNegate = false;
+};
+
+using StringFilterList = std::vector<StringFilter>;
+
 static std::vector<std::string> split( const char* a_input, const char* a_regex ) 
 {
 	// passing -1 as the submatch index parameter performs splitting
@@ -79,8 +87,45 @@ static RE::NiNode* FindClosestHitNode( RE::NiNode* a_root, RE::NiPoint3* a_pos, 
 	return NULL;
 }
 
+static bool FormHasKeywords( RE::BGSKeywordForm* a_form, StringFilterList& a_keywords, std::regex* a_regex = NULL )
+{
+	for( auto& keyword : a_keywords )
+	{
+		bool hasKeyword = a_form->HasKeywordString( keyword.str );
+
+		if( keyword.isNegate )
+			hasKeyword = !hasKeyword;
+
+		if( !hasKeyword )
+		{
+			// Skip check for current keyword if regex not matched
+			if( a_regex && !std::regex_match( keyword.str, *a_regex ) )
+				continue;
+				
+			return false;
+		}
+	}
+
+	return true;
+}
+
+static bool ActiveEffectsHasKeywords( RE::Actor* a_actor, StringFilterList& a_keywords )
+{
+	// Search active effects if both actor and armor has none of the keyword
+	auto activeEffects = a_actor->GetActiveEffectList();
+	for( auto activeEffect : *activeEffects )
+	{
+		// Effect must active to count for keyword matching
+		if( activeEffect->flags.none( RE::ActiveEffect::Flag::kInactive ) &&
+			FormHasKeywords( activeEffect->effect->baseEffect, a_keywords ) )
+			return true;
+	}
+
+	return false;
+}
+
 static std::regex g_armorKeywordRegex( "Armor.*" );
-static bool ActorHasKeywords( RE::Actor* a_actor, std::vector<std::string>& a_keywords )
+static bool ActorHasKeywords( RE::Actor* a_actor, StringFilterList& a_keywords )
 {
 	bool actorHasKeyword	= true;
 	bool armorHasKeyword	= true;
@@ -88,8 +133,8 @@ static bool ActorHasKeywords( RE::Actor* a_actor, std::vector<std::string>& a_ke
 
 	for( auto& keyword : a_keywords )
 	{
-		if( !std::regex_match( keyword, g_armorKeywordRegex ) )
-			actorHasKeyword = actorHasKeyword && a_actor->HasKeywordString( keyword );
+		if( !std::regex_match( keyword.str, g_armorKeywordRegex ) )
+			actorHasKeyword = actorHasKeyword && a_actor->HasKeywordString( keyword.str );
 		else
 			includeArmor = true;
 	}
@@ -110,18 +155,7 @@ static bool ActorHasKeywords( RE::Actor* a_actor, std::vector<std::string>& a_ke
 				const auto armor = item->As<RE::TESObjectARMO>();
 				if( armor ) 
 				{
-					bool pieceHasKeyword = true;
-					for( auto& keyword : a_keywords )
-					{
-						if( std::regex_match( keyword, g_armorKeywordRegex ) )
-						{
-							pieceHasKeyword = pieceHasKeyword && armor->HasKeywordString( keyword );
-
-							if( !pieceHasKeyword ) break;
-						}
-					}
-
-					armorHasKeyword = armorHasKeyword || pieceHasKeyword;
+					armorHasKeyword = FormHasKeywords( armor, a_keywords, &g_armorKeywordRegex );
 
 					if( armorHasKeyword ) break;
 				}
