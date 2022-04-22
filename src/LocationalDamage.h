@@ -97,4 +97,5 @@ struct LocationalDamage
 	}
 
 	static bool Install( REL::Version a_ver );
+	static void InitFormEditorIDMap();
 };

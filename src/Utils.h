@@ -90,16 +90,21 @@ public:
 
 	bool FormEditorIDMatch( RE::TESForm* a_form )
 	{
+		if( !a_form )
+			return false;
+
 		if( data.size() == 0 )
 			return true;
 
+		extern std::unordered_map<RE::FormID,std::string> formEditorIDMap;
+		auto formEditorID = formEditorIDMap[ a_form->GetFormID() ];
 		for( auto& keywordList : data )
 		{
 			if( keywordList.type == StringFilter::Type::kFormEditorID )
 			{
 				for( auto& keyword : keywordList.data )
 				{
-					if( !std::regex_match( a_form->GetFormEditorID(), keyword.regex ) )
+					if( !std::regex_match( formEditorID, keyword.regex ) )
 						return false;
 				}
 			}
@@ -215,9 +220,9 @@ public:
 			bool isActorHasKeyword	= ActorHasKeywords( actor );
 			bool isArmorHasKeyword	= ArmorHasKeywords( actor );
 			bool isMagicHasKeyword	= ActiveEffectsHasKeywords( actor );
-			bool isEditIDMatched	= FormEditorIDMatch( actor );
+			bool isEditorIDMatched	= flags.any( Flag::kFormEditorID ) ? FormEditorIDMatch( actor->GetActorBase() ) : true;
 
-			return isActorHasKeyword && isArmorHasKeyword && isMagicHasKeyword && isEditIDMatched;
+			return isActorHasKeyword && isArmorHasKeyword && isMagicHasKeyword && isEditorIDMatched;
 		}
 		else if( a_form->Is( RE::FormType::Race ) )
 		{

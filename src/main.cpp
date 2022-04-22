@@ -73,11 +73,18 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* a
 	return true;
 }
 
+static void SKSEMessageHandler(SKSE::MessagingInterface::Message* message) 
+{
+	if( message->type == SKSE::MessagingInterface::kDataLoaded )
+		LocationalDamage::InitFormEditorIDMap();
+}
+
 extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load( const SKSE::LoadInterface* a_skse )
 {
 	InitializeLog();
 
 	SKSE::Init( a_skse );
+	SKSE::GetMessagingInterface()->RegisterListener( "SKSE", SKSEMessageHandler );
 
 	return LocationalDamage::Install( a_skse->RuntimeVersion() );
 }

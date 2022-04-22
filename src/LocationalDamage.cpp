@@ -31,6 +31,22 @@ std::vector<HitDataOverride> g_HitDataOverride;
 RE::BGSImpactData* g_ImpactOverride = NULL;
 unsigned long long g_PerformanceFrequency = 0;
 
+std::unordered_map<RE::FormID,std::string> formEditorIDMap;
+void LocationalDamage::InitFormEditorIDMap()
+{
+	auto start = std::chrono::system_clock::now();
+	const auto& [map, lock] = RE::TESForm::GetAllFormsByEditorID();
+	const RE::BSReadWriteLock l{ lock };
+	if( map ) 
+	{
+		for( auto& [editorID, form] : *map )
+			formEditorIDMap.emplace( form->GetFormID(), editorID );
+	}
+	auto end = std::chrono::system_clock::now();
+	std::chrono::duration<float> duration = end - start;
+	logger::info( "Form editor ID loaded in {:0.2f} seconds", duration.count() );
+}
+
 static std::mutex mutex;
 void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::TESObjectREFR* a_target, RE::NiPoint3* a_location )
 {
