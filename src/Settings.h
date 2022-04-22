@@ -52,9 +52,9 @@ struct LocationalDamageSetting
 			for( auto keyword : keywordList )
 			{
 				if( keyword[ 0 ] == '-' )
-					filter.data.push_back( { keyword.substr( 1 ), true  } );
+					filter.AddFilter( keyword.substr( 1 ), true );
 				else
-					filter.data.push_back( { keyword } );
+					filter.AddFilter( keyword );
 			}
 
 			return filter;
@@ -63,9 +63,9 @@ struct LocationalDamageSetting
 		{
 			StringFilter filter;
 			if( filterOption[ 0 ][ 0 ] == '-' )
-				filter.data.push_back( { filterOption[ 0 ].substr( 1 ), true  } );
+				filter.AddFilter( filterOption[ 0 ].substr( 1 ), true );
 			else
-				filter.data.push_back( { filterOption[ 0 ] } );
+				filter.AddFilter( filterOption[ 0 ] );
 
 			return filter;
 		}

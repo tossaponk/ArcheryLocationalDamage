@@ -18,11 +18,33 @@ struct StringFilter
 	struct FilterData
 	{
 		std::string	str;
+		std::regex	regex;
 		bool		isNegate = false;
 	};
 
 	std::vector<FilterData>	data;
 	Type					type = Type::kFormEditorID;
+
+	void AddFilter( std::string a_filter, bool isNegate = false )
+	{
+		FilterData newFilter;
+		newFilter.str = a_filter;
+		newFilter.isNegate = isNegate;
+
+		if( type == Type::kFormEditorID )
+		{
+			try
+			{
+				newFilter.regex = std::regex( a_filter );
+			}
+			catch( std::regex_error e )
+			{
+				stl::report_and_fail( fmt::format( "Regular expression error: {} is not vaild.\n{}", a_filter, e.what() ) );
+			}
+		}
+		
+		data.push_back( newFilter );
+	}
 };
 
 class StringFilterList
@@ -77,8 +99,7 @@ public:
 			{
 				for( auto& keyword : keywordList.data )
 				{
-					std::regex filter( keyword.str );
-					if( !std::regex_match( a_form->GetFormEditorID(), filter ) )
+					if( !std::regex_match( a_form->GetFormEditorID(), keyword.regex ) )
 						return false;
 				}
 			}
@@ -191,11 +212,12 @@ public:
 		if( a_form->Is( RE::FormType::ActorCharacter ) )
 		{
 			auto actor = static_cast<RE::Actor*>( a_form );
-			bool isActorHasKeyword = ActorHasKeywords( actor );
-			bool isArmorHasKeyword = ArmorHasKeywords( actor );
-			bool isMagicHasKeyword = ActiveEffectsHasKeywords( actor );
+			bool isActorHasKeyword	= ActorHasKeywords( actor );
+			bool isArmorHasKeyword	= ArmorHasKeywords( actor );
+			bool isMagicHasKeyword	= ActiveEffectsHasKeywords( actor );
+			bool isEditIDMatched	= FormEditorIDMatch( actor );
 
-			return isActorHasKeyword && isArmorHasKeyword && isMagicHasKeyword;
+			return isActorHasKeyword && isArmorHasKeyword && isMagicHasKeyword && isEditIDMatched;
 		}
 		else if( a_form->Is( RE::FormType::Race ) )
 		{

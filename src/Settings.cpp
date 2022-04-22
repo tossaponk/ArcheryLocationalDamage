@@ -85,7 +85,14 @@ void Settings::Load()
 				setting.sex = RE::SEX::kNone;
 
 			setting.enable = regexp != "";
-			setting.regexp = regexp;
+			try
+			{
+				setting.regexp = regexp;
+			}
+			catch( std::regex_error e )
+			{
+				stl::report_and_fail( fmt::format( "Regular expression error: {} is not vaild.\n{}", regexp, e.what() ) );
+			}
 
 			auto section = iniFile.GetSection( sectionIter.pItem );
 
