@@ -76,7 +76,8 @@ void Settings::Load()
 			setting.message				= iniFile.GetValue( sectionIter.pItem, "Message", "" );
 			setting.messageFloating		= iniFile.GetValue( sectionIter.pItem, "MessageFloating", "" );
 			setting.sound				= iniFile.GetValue( sectionIter.pItem, "HitSound", "" );
-			std::string regexp			= iniFile.GetValue( sectionIter.pItem, "Regexp", "" );
+			auto regexp					= iniFile.GetValue( sectionIter.pItem, "Regexp", "" );
+			auto editorID				= iniFile.GetValue( sectionIter.pItem, "EditorID", "" );
 
 			auto sex = iniFile.GetValue( sectionIter.pItem, "Sex", "" );
 			if( sex[ 0 ] != '\0' )
@@ -84,15 +85,9 @@ void Settings::Load()
 			else
 				setting.sex = RE::SEX::kNone;
 
-			setting.enable = regexp != "";
-			try
-			{
-				setting.regexp = regexp;
-			}
-			catch( std::regex_error e )
-			{
-				stl::report_and_fail( fmt::format( "Regular expression error: {} is not vaild.\n{}", regexp, e.what() ) );
-			}
+			setting.enable		= regexp[ 0 ] != NULL;
+			setting.regexp		= CreateRegex( regexp );
+			setting.editorID	= CreateRegex( editorID );
 
 			auto section = iniFile.GetSection( sectionIter.pItem );
 
@@ -111,9 +106,9 @@ void Settings::Load()
 				else if( currentKey == "KeywordExclude" && *iter->second != 0 )
 					LocationalDamageSetting::ExtractFilterStrings( setting.filterExclude, iter->second );
 				else if( currentKey == "RaceInclude" && *iter->second != 0 )
-					LocationalDamageSetting::ExtractFilterStrings( setting.raceInclude, iter->second );
+					setting.raceInclude.push_back( CreateRegex( iter->second ) );
 				else if( currentKey == "RaceExclude" && *iter->second != 0 )
-					LocationalDamageSetting::ExtractFilterStrings( setting.raceInclude, iter->second );
+					setting.raceExclude.push_back( CreateRegex( iter->second ) );
 			}
 
 			g_LocationalDamageSettings.push_back( setting );

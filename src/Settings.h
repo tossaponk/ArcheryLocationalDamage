@@ -24,11 +24,12 @@ struct LocationalDamageSetting
 	std::string						impactData;
 	std::regex						regexp;
 	std::vector<Effect>				effects;
+	std::regex						editorID;
 	RE::SEX							sex;
 	std::vector<StringFilterList>	filterInclude;
 	std::vector<StringFilterList>	filterExclude;
-	std::vector<StringFilterList>	raceInclude;
-	std::vector<StringFilterList>	raceExclude;
+	std::vector<std::regex>			raceInclude;
+	std::vector<std::regex>			raceExclude;
 
 	LocationalDamageSetting()
 	{
@@ -59,18 +60,8 @@ struct LocationalDamageSetting
 
 			return filter;
 		}
-		else if( filterOption.size() == 1 )
-		{
-			StringFilter filter;
-			if( filterOption[ 0 ][ 0 ] == '-' )
-				filter.AddFilter( filterOption[ 0 ].substr( 1 ), true );
-			else
-				filter.AddFilter( filterOption[ 0 ] );
 
-			return filter;
-		}
-
-		stl::report_and_fail( fmt::format( "Invalid keyword format. Expecting <= 1 ':' but found {}.", filterOption.size() - 1 ) );
+		stl::report_and_fail( fmt::format( "Invalid keyword format. Expecting 1 of ':' but found {}. ({})", filterOption.size() - 1, a_filter ) );
 	}
 
 	static void ExtractFilterStrings( std::vector<StringFilterList>& a_settingList, const char* a_filter )

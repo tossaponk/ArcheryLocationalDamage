@@ -55,7 +55,11 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 		a_target->formType == RE::FormType::ActorCharacter )
 	{
 		// Skip if projectile has no life remaining (eg. during VATS hitscan)
-		if( a_projectile->lifeRemaining == 0 )
+		/*if( a_projectile->lifeRemaining == 0 )
+			return;*/
+
+		// VATS hitscan seems to be setting this to 1, skip it
+		if( a_projectile->pad164 == 1 )
 			return;
 
 		RE::Actor* shooterActor = nullptr;
@@ -131,25 +135,25 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 					if( shouldApplyLocationalDamage && locationalSetting.raceInclude.size() > 0 )
 					{
 						shouldApplyLocationalDamage = false;
+						auto race = targetActor->GetRace();
 						for( auto& filter : locationalSetting.raceInclude )
 						{
-							if( filter.Evaluate( targetActor->GetRace() ) )
-							{
-								shouldApplyLocationalDamage = true;
+							shouldApplyLocationalDamage = std::regex_match( race->GetFullName(), filter );
+
+							if( shouldApplyLocationalDamage )
 								break;
-							}
 						}
 					}
 
 					if( shouldApplyLocationalDamage && locationalSetting.raceExclude.size() > 0 )
 					{
+						auto race = targetActor->GetRace();
 						for( auto& filter : locationalSetting.raceExclude )
 						{
-							if( filter.Evaluate( targetActor->GetRace() ) )
-							{
-								shouldApplyLocationalDamage = false;
+							shouldApplyLocationalDamage = std::regex_match( race->GetFullName(), filter );
+
+							if( !shouldApplyLocationalDamage )
 								break;
-							}
 						}
 					}
 
@@ -159,6 +163,17 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 						auto targetSex = targetActor->GetActorBase()->GetSex();
 						if( targetSex != RE::SEX::kNone )
 							shouldApplyLocationalDamage = targetSex == locationalSetting.sex;
+					}
+
+					// Editor ID test
+					if( shouldApplyLocationalDamage && !locationalSetting.editorID._Empty() )
+					{
+						auto base = targetActor->GetActorBase();
+						if( base )
+						{
+							auto& editorID = formEditorIDMap[ base->GetFormID() ];
+							shouldApplyLocationalDamage = std::regex_match( editorID, locationalSetting.editorID );
+						}
 					}
 
 					// Final success chance check

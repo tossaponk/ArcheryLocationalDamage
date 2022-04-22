@@ -10,7 +10,6 @@ struct StringFilter
 		kActorKeyword,
 		kArmorKeyword,
 		kMagicKeyword,
-		kFormEditorID,
 
 		kTotal
 	};
@@ -18,30 +17,17 @@ struct StringFilter
 	struct FilterData
 	{
 		std::string	str;
-		std::regex	regex;
 		bool		isNegate = false;
 	};
 
 	std::vector<FilterData>	data;
-	Type					type = Type::kFormEditorID;
+	Type					type = Type::kNone;
 
 	void AddFilter( std::string a_filter, bool isNegate = false )
 	{
 		FilterData newFilter;
 		newFilter.str = a_filter;
 		newFilter.isNegate = isNegate;
-
-		if( type == Type::kFormEditorID )
-		{
-			try
-			{
-				newFilter.regex = std::regex( a_filter );
-			}
-			catch( std::regex_error e )
-			{
-				stl::report_and_fail( fmt::format( "Regular expression error: {} is not vaild.\n{}", a_filter, e.what() ) );
-			}
-		}
 		
 		data.push_back( newFilter );
 	}
@@ -54,7 +40,6 @@ class StringFilterList
 		kActorKeyword = 1 << (uint32_t)StringFilter::Type::kActorKeyword,
 		kArmorKeyword = 1 << (uint32_t)StringFilter::Type::kArmorKeyword,
 		kMagicKeyword = 1 << (uint32_t)StringFilter::Type::kMagicKeyword,
-		kFormEditorID = 1 << (uint32_t)StringFilter::Type::kFormEditorID,
 	};
 
 	std::vector<StringFilter>		data;
@@ -85,31 +70,6 @@ public:
 				return false;
 		}
 
-		return true;
-	}
-
-	bool FormEditorIDMatch( RE::TESForm* a_form )
-	{
-		if( !a_form )
-			return false;
-
-		if( data.size() == 0 )
-			return true;
-
-		extern std::unordered_map<RE::FormID,std::string> formEditorIDMap;
-		auto formEditorID = formEditorIDMap[ a_form->GetFormID() ];
-		for( auto& keywordList : data )
-		{
-			if( keywordList.type == StringFilter::Type::kFormEditorID )
-			{
-				for( auto& keyword : keywordList.data )
-				{
-					if( !std::regex_match( formEditorID, keyword.regex ) )
-						return false;
-				}
-			}
-		}
-		
 		return true;
 	}
 
@@ -220,13 +180,8 @@ public:
 			bool isActorHasKeyword	= ActorHasKeywords( actor );
 			bool isArmorHasKeyword	= ArmorHasKeywords( actor );
 			bool isMagicHasKeyword	= ActiveEffectsHasKeywords( actor );
-			bool isEditorIDMatched	= flags.any( Flag::kFormEditorID ) ? FormEditorIDMatch( actor->GetActorBase() ) : true;
 
-			return isActorHasKeyword && isArmorHasKeyword && isMagicHasKeyword && isEditorIDMatched;
-		}
-		else if( a_form->Is( RE::FormType::Race ) )
-		{
-			return FormEditorIDMatch( a_form );
+			return isActorHasKeyword && isArmorHasKeyword && isMagicHasKeyword;
 		}
 
 		return false;
@@ -242,6 +197,21 @@ static std::vector<std::string> split( const char* a_input, const char* a_regex 
 		first{in.begin(), in.end(), re, -1},
 		last;
 	return {first, last};
+}
+
+static std::regex CreateRegex( const char* a_str )
+{
+	if( a_str == NULL || a_str[ 0 ] == NULL )
+		return std::regex();
+
+	try
+	{
+		return std::regex( a_str );
+	}
+	catch( std::regex_error e )
+	{
+		stl::report_and_fail( fmt::format( "Regular expression error: {} is not vaild.\n{}", a_str, e.what() ) );
+	}
 }
 
 extern std::regex g_sExcludeRegexp;
