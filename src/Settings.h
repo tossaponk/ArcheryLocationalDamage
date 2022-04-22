@@ -27,7 +27,8 @@ struct LocationalDamageSetting
 	RE::SEX							sex;
 	std::vector<StringFilterList>	filterInclude;
 	std::vector<StringFilterList>	filterExclude;
-	std::vector<StringFilterList>	race;
+	std::vector<StringFilterList>	raceInclude;
+	std::vector<StringFilterList>	raceExclude;
 
 	LocationalDamageSetting()
 	{

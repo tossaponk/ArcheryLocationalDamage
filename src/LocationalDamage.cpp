@@ -112,17 +112,29 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 					}
 
 					// Check for race
-					if( shouldApplyLocationalDamage && locationalSetting.race.size() > 0 )
+					if( shouldApplyLocationalDamage && locationalSetting.raceInclude.size() > 0 )
 					{
 						shouldApplyLocationalDamage = false;
-						for( auto& raceFilter : locationalSetting.race )
+						for( auto& filter : locationalSetting.raceInclude )
 						{
-							shouldApplyLocationalDamage = raceFilter.Evaluate( targetActor->GetRace() );
-
-							if( shouldApplyLocationalDamage )
+							if( filter.Evaluate( targetActor->GetRace() ) )
+							{
+								shouldApplyLocationalDamage = true;
 								break;
+							}
 						}
-							
+					}
+
+					if( shouldApplyLocationalDamage && locationalSetting.raceExclude.size() > 0 )
+					{
+						for( auto& filter : locationalSetting.raceExclude )
+						{
+							if( filter.Evaluate( targetActor->GetRace() ) )
+							{
+								shouldApplyLocationalDamage = false;
+								break;
+							}
+						}
 					}
 
 					// Check for sex

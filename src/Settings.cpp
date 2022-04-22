@@ -96,12 +96,14 @@ void Settings::Load()
 					SetLocationEffect( setting, effectIdx++, iter->second );
 				else if( currentKey == "EffectChance" )
 					SetLocationChance( setting, chanceIdx++, atoi( iter->second ) );
-				else if( currentKey == "FilterInclude" && *iter->second != 0 )
+				else if( currentKey == "KeywordInclude" && *iter->second != 0 )
 					LocationalDamageSetting::ExtractFilterStrings( setting.filterInclude, iter->second );
-				else if( currentKey == "FilterExclude" && *iter->second != 0 )
+				else if( currentKey == "KeywordExclude" && *iter->second != 0 )
 					LocationalDamageSetting::ExtractFilterStrings( setting.filterExclude, iter->second );
-				else if( currentKey == "Race" && *iter->second != 0 )
-					LocationalDamageSetting::ExtractFilterStrings( setting.race, iter->second );
+				else if( currentKey == "RaceInclude" && *iter->second != 0 )
+					LocationalDamageSetting::ExtractFilterStrings( setting.raceInclude, iter->second );
+				else if( currentKey == "RaceExclude" && *iter->second != 0 )
+					LocationalDamageSetting::ExtractFilterStrings( setting.raceInclude, iter->second );
 			}
 
 			g_LocationalDamageSettings.push_back( setting );
