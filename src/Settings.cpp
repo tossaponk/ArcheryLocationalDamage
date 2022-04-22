@@ -26,6 +26,9 @@ void Settings::Load()
 	iniFile.SetMultiKey();
 	iniFile.LoadFile( L"Data/SKSE/Plugins/ArcheryLocationalDamage.ini" );
 
+	if( iniFile.GetLongValue( "Version", "Major", 1 ) < 2 )
+		stl::report_and_fail( "You are using an old version of the INI file. Please download the new version or read the mod description page on how to upgrade the INI to the new version before continuing." );
+
 	g_bDebugNotification		= iniFile.GetBoolValue( "Settings", "DebugNotification", false );
 	g_bPlayerNotification		= iniFile.GetBoolValue( "Settings", "PlayerHitNotification", false );
 	g_bPlayerHitSound			= iniFile.GetBoolValue( "Settings", "PlayerHitSound", true );

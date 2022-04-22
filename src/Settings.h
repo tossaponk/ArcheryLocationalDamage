@@ -38,11 +38,9 @@ struct LocationalDamageSetting
 	static StringFilter CreateFilterFromString( const char* a_filter )
 	{
 		auto filterOption = split( a_filter, ":" );
-		StringFilter filter;
-		filter.str = a_filter;
-
 		if( filterOption.size() == 2 )
 		{
+			StringFilter filter;
 			if( filterOption[ 0 ] == "S" )
 				filter.type = StringFilter::Type::kActorKeyword;
 			else if( filterOption[ 0 ] == "A" )
@@ -50,17 +48,29 @@ struct LocationalDamageSetting
 			else if( filterOption[ 0 ] == "M" )
 				filter.type = StringFilter::Type::kMagicKeyword;
 
-			filter.str = filterOption[ 1 ];
-		}
+			auto keywordList = split( filterOption[ 1 ].c_str(), "\\+" );
+			for( auto keyword : keywordList )
+			{
+				if( keyword[ 0 ] == '-' )
+					filter.data.push_back( { keyword.substr( 1 ), true  } );
+				else
+					filter.data.push_back( { keyword } );
+			}
 
-		// Set negate to true and remove a minus from the string if there is one
-		if( filter.str[ 0 ] != NULL && filter.str[ 0 ] == '-' )
+			return filter;
+		}
+		else if( filterOption.size() == 1 )
 		{
-			filter.isNegate = true;
-			filter.str = filter.str.substr( 1 );
+			StringFilter filter;
+			if( filterOption[ 0 ][ 0 ] == '-' )
+				filter.data.push_back( { filterOption[ 0 ].substr( 1 ), true  } );
+			else
+				filter.data.push_back( { filterOption[ 0 ] } );
+
+			return filter;
 		}
 
-		return filter;
+		stl::report_and_fail( fmt::format( "Invalid keyword format. Expecting <= 1 ':' but found {}.", filterOption.size() - 1 ) );
 	}
 
 	static void ExtractFilterStrings( std::vector<StringFilterList>& a_settingList, const char* a_filter )

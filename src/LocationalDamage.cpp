@@ -86,7 +86,7 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 					std::regex_match( hitPart->name.c_str(), locationalSetting.regexp ) )
 				{
 					// Default to true if there is no filter used
-						bool shouldApplyLocationalDamage = locationalSetting.filterInclude.size() == 0;
+					bool shouldApplyLocationalDamage = locationalSetting.filterInclude.size() == 0;
 
 					// Check if the actor actually has a keyword
 					for( auto& filter : locationalSetting.filterInclude )
@@ -319,6 +319,10 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 
 bool LocationalDamage::Install( REL::Version a_ver )
 {
+#ifdef _DEBUG
+	//while( !IsDebuggerPresent() );
+#endif
+
 	Settings::Load();
 	FloatingDamage::Initialize( a_ver );
 

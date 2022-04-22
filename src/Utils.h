@@ -15,9 +15,14 @@ struct StringFilter
 		kTotal
 	};
 
-	std::string						str;
-	Type							type = Type::kFormEditorID;
-	bool							isNegate = false;
+	struct FilterData
+	{
+		std::string	str;
+		bool		isNegate = false;
+	};
+
+	std::vector<FilterData>	data;
+	Type					type = Type::kFormEditorID;
 };
 
 class StringFilterList
@@ -45,16 +50,16 @@ public:
 		return flags.any( (Flag)( 1 << (uint32_t)a_type ) );
 	}
 
-	bool FormHasKeywords( RE::BGSKeywordForm* a_form, StringFilter::Type a_type = StringFilter::Type::kNone )
+	static bool FormHasKeywords( RE::BGSKeywordForm* a_form, StringFilter& a_filter )
 	{
-		for( auto& keyword : data )
+		for( auto& keyword : a_filter.data )
 		{
 			bool hasKeyword = a_form->HasKeywordString( keyword.str );
 
 			if( keyword.isNegate )
 				hasKeyword = !hasKeyword;
 
-			if( !hasKeyword && (keyword.type == a_type || a_type == StringFilter::Type::kNone ) )
+			if( !hasKeyword )
 				return false;
 		}
 
@@ -63,13 +68,19 @@ public:
 
 	bool FormEditorIDMatch( RE::TESForm* a_form )
 	{
-		for( auto& keyword : data )
+		if( data.size() == 0 )
+			return true;
+
+		for( auto& keywordList : data )
 		{
-			if( keyword.type == StringFilter::Type::kFormEditorID )
+			if( keywordList.type == StringFilter::Type::kFormEditorID )
 			{
-				std::regex filter( keyword.str );
-				if( !std::regex_match( a_form->GetFormEditorID(), filter ) )
-					return false;
+				for( auto& keyword : keywordList.data )
+				{
+					std::regex filter( keyword.str );
+					if( !std::regex_match( a_form->GetFormEditorID(), filter ) )
+						return false;
+				}
 			}
 		}
 		
@@ -81,17 +92,35 @@ public:
 		if( !HasFilterType( StringFilter::Type::kMagicKeyword ) )
 			return true;
 
+		std::vector<StringFilter*> lookupFilter;
+		for( auto& filter : data )
+		{
+			if( filter.type == StringFilter::Type::kMagicKeyword )
+				lookupFilter.push_back( &filter );
+		}
+
 		// Search active effects if both actor and armor has none of the keyword
 		auto activeEffects = a_actor->GetActiveEffectList();
 		for( auto activeEffect : *activeEffects )
 		{
-			// Effect must active to count for keyword matching
-			if( activeEffect->flags.none( RE::ActiveEffect::Flag::kInactive ) &&
-				FormHasKeywords( activeEffect->effect->baseEffect, StringFilter::Type::kMagicKeyword ) )
-				return true;
+			if( lookupFilter.size() == 0 )
+				break;
+
+			for( auto iter = lookupFilter.begin(); iter != lookupFilter.end(); )
+			{
+				// Effect must active to count for keyword matching
+				if( activeEffect->flags.none( RE::ActiveEffect::Flag::kInactive ) &&
+					FormHasKeywords( activeEffect->effect->baseEffect, **iter ) )
+				{
+					iter = lookupFilter.erase( iter );
+				}
+				else
+					++iter;
+			}
 		}
 
-		return false;
+		// Success when all filters matched
+		return lookupFilter.size() == 0;
 	}
 
 	bool ActorHasKeywords( RE::Actor* a_actor )
@@ -99,14 +128,17 @@ public:
 		if( !HasFilterType( StringFilter::Type::kActorKeyword ) )
 			return true;
 
-		for( auto& keyword : data )
+		for( auto& keywordList : data )
 		{
-			bool hasKeyword = a_actor->HasKeywordString( keyword.str );
-			if( keyword.isNegate )
-				hasKeyword = !hasKeyword;
+			for( auto& keyword : keywordList.data )
+			{
+				bool hasKeyword = a_actor->HasKeywordString( keyword.str );
+				if( keyword.isNegate )
+					hasKeyword = !hasKeyword;
 
-			if( !hasKeyword && keyword.type == StringFilter::Type::kActorKeyword )
-				return false;
+				if( !hasKeyword && keywordList.type == StringFilter::Type::kActorKeyword )
+					return false;
+			}
 		}
 
 		return true;
@@ -117,22 +149,41 @@ public:
 		if( !HasFilterType( StringFilter::Type::kArmorKeyword ) )
 			return true;
 
+		std::vector<StringFilter*> lookupFilter;
+		for( auto& filter : data )
+		{
+			if( filter.type == StringFilter::Type::kArmorKeyword )
+				lookupFilter.push_back( &filter );
+		}
+
 		const auto inv = a_actor->GetInventory([](RE::TESBoundObject& a_object) {
 			return a_object.IsArmor();
 			});
 
 		for( const auto& [item, invData] : inv ) 
 		{
+			if( lookupFilter.size() == 0 )
+				break;
+
 			const auto& [count, entry] = invData;
 			if( count > 0 && entry->IsWorn() ) 
 			{
 				const auto armor = item->As<RE::TESObjectARMO>();
-				if( armor && FormHasKeywords( armor, StringFilter::Type::kArmorKeyword ) ) 
-					return true;
+				for( auto iter = lookupFilter.begin(); iter != lookupFilter.end(); )
+				{
+					// Effect must active to count for keyword matching
+					if( armor && FormHasKeywords( armor, **iter ) )
+					{
+						iter = lookupFilter.erase( iter );
+					}
+					else
+						++iter;
+				}
 			}
 		}
 
-		return false;
+		// Success when all filters matched
+		return lookupFilter.size() == 0;
 	}
 
 	bool Evaluate( RE::TESForm* a_form )
