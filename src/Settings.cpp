@@ -1,7 +1,7 @@
 #include "Utils.h"
 #include "Settings.h"
 
-std::vector<LocationalDamageSetting> g_LocationalDamageSettings;
+std::vector<Settings::Location> g_LocationalDamageSettings;
 
 bool g_bDebugNotification = true;
 bool g_bPlayerNotification = true;
@@ -61,7 +61,7 @@ void Settings::Load()
 	{
 		if( std::regex_match( sectionIter.pItem, sectionRegex ) )
 		{
-			LocationalDamageSetting setting;
+			Location setting;
 
 			setting.shouldContinue		= iniFile.GetBoolValue( sectionIter.pItem, "Continue", false );
 			setting.damageMult			= (float)iniFile.GetDoubleValue( sectionIter.pItem, "Multiplier", 1.0 );
@@ -77,17 +77,17 @@ void Settings::Load()
 			setting.messageFloating		= iniFile.GetValue( sectionIter.pItem, "MessageFloating", "" );
 			setting.sound				= iniFile.GetValue( sectionIter.pItem, "HitSound", "" );
 			auto regexp					= iniFile.GetValue( sectionIter.pItem, "Regexp", "" );
-			auto editorID				= iniFile.GetValue( sectionIter.pItem, "EditorID", "" );
-
-			auto sex = iniFile.GetValue( sectionIter.pItem, "Sex", "" );
-			if( sex[ 0 ] != '\0' )
-				setting.sex = _strcmpi( sex, "M" ) == 0 ? RE::SEX::kMale : RE::SEX::kFemale;
-			else
-				setting.sex = RE::SEX::kNone;
 
 			setting.enable		= regexp[ 0 ] != NULL;
 			setting.regexp		= CreateRegex( regexp );
-			setting.editorID	= CreateRegex( editorID );
+
+			auto sex = iniFile.GetValue( sectionIter.pItem, "Sex", "" );
+			if( sex[ 0 ] != '\0' )
+				setting.filter.sex = _strcmpi( sex, "M" ) == 0 ? RE::SEX::kMale : RE::SEX::kFemale;
+			else
+				setting.filter.sex = RE::SEX::kNone;
+			
+			setting.filter.editorID	= CreateRegex( iniFile.GetValue( sectionIter.pItem, "EditorID", "" ) );
 
 			auto section = iniFile.GetSection( sectionIter.pItem );
 
@@ -102,13 +102,13 @@ void Settings::Load()
 				else if( currentKey == "EffectChance" )
 					SetLocationChance( setting, chanceIdx++, atoi( iter->second ) );
 				else if( currentKey == "KeywordInclude" && *iter->second != 0 )
-					LocationalDamageSetting::ExtractFilterStrings( setting.filterInclude, iter->second );
+					ExtractFilterStrings( setting.filter.keywordInclude, iter->second );
 				else if( currentKey == "KeywordExclude" && *iter->second != 0 )
-					LocationalDamageSetting::ExtractFilterStrings( setting.filterExclude, iter->second );
+					ExtractFilterStrings( setting.filter.keywordExclude, iter->second );
 				else if( currentKey == "RaceInclude" && *iter->second != 0 )
-					setting.raceInclude.push_back( CreateRegex( iter->second ) );
+					setting.filter.raceInclude.push_back( CreateRegex( iter->second ) );
 				else if( currentKey == "RaceExclude" && *iter->second != 0 )
-					setting.raceExclude.push_back( CreateRegex( iter->second ) );
+					setting.filter.raceExclude.push_back( CreateRegex( iter->second ) );
 			}
 
 			g_LocationalDamageSettings.push_back( setting );

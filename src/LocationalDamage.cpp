@@ -4,7 +4,7 @@
 #include "Settings.h"
 #include "FloatingDamage.h"
 
-extern std::vector<LocationalDamageSetting> g_LocationalDamageSettings;
+extern std::vector<Settings::Location> g_LocationalDamageSettings;
 
 extern bool g_bDebugNotification;
 extern bool g_bPlayerNotification;
@@ -55,11 +55,13 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 		a_target->formType == RE::FormType::ActorCharacter )
 	{
 		// Skip if projectile has no life remaining (eg. during VATS hitscan)
+		// Not really accurate because this member variable seems to be the projectile's lifetime instead of remaining life.
+		// lifeRemaining can be zero when shot at point-blank range.
 		/*if( a_projectile->lifeRemaining == 0 )
 			return;*/
 
-		// VATS hitscan seems to be setting this to 1, skip it
-		if( a_projectile->pad164 == 1 )
+		// VATS hitscan set bit 17 to 1
+		if( a_projectile->flags & (1 << 17) )
 			return;
 
 		RE::Actor* shooterActor = nullptr;
@@ -105,81 +107,18 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 				if( locationalSetting.enable &&
 					std::regex_match( hitPart->name.c_str(), locationalSetting.regexp ) )
 				{
-					// Default to true if there is no filter used
-					bool shouldApplyLocationalDamage = locationalSetting.filterInclude.size() == 0;
+					// Success chance check
+					int finalSuccessChance = 100;
 
-					// Check if the actor actually has a keyword
-					for( auto& filter : locationalSetting.filterInclude )
+					// Compute HP factor
+					if( locationalSetting.successHPFactor != 0 )
 					{
-						if( filter.Evaluate( targetActor ) )
-						{
-							shouldApplyLocationalDamage = true;
-							break;
-						}
+						float successHPFactor = GetHPFactor( targetActor, locationalSetting.successHPFactor, g_fLastHitDamage, locationalSetting.successHPFactorCap );
+						finalSuccessChance = (int)(locationalSetting.successChance * successHPFactor);
 					}
-
-					// Check for exclusion filter
-					if( shouldApplyLocationalDamage && locationalSetting.filterExclude.size() > 0 )
-					{
-						for( auto& filter : locationalSetting.filterExclude )
-						{
-							if( filter.Evaluate( targetActor ) )
-							{
-								shouldApplyLocationalDamage = false;
-								break;
-							}
-						}
-					}
-
-					// Check for race
-					if( shouldApplyLocationalDamage && locationalSetting.raceInclude.size() > 0 )
-					{
-						shouldApplyLocationalDamage = false;
-						auto race = targetActor->GetRace();
-						for( auto& filter : locationalSetting.raceInclude )
-						{
-							shouldApplyLocationalDamage = std::regex_match( race->GetFullName(), filter );
-
-							if( shouldApplyLocationalDamage )
-								break;
-						}
-					}
-
-					if( shouldApplyLocationalDamage && locationalSetting.raceExclude.size() > 0 )
-					{
-						auto race = targetActor->GetRace();
-						for( auto& filter : locationalSetting.raceExclude )
-						{
-							shouldApplyLocationalDamage = std::regex_match( race->GetFullName(), filter );
-
-							if( !shouldApplyLocationalDamage )
-								break;
-						}
-					}
-
-					// Check for sex
-					if( shouldApplyLocationalDamage && locationalSetting.sex != RE::SEX::kNone )
-					{
-						auto targetSex = targetActor->GetActorBase()->GetSex();
-						if( targetSex != RE::SEX::kNone )
-							shouldApplyLocationalDamage = targetSex == locationalSetting.sex;
-					}
-
-					// Editor ID test
-					if( shouldApplyLocationalDamage && !locationalSetting.editorID._Empty() )
-					{
-						auto base = targetActor->GetActorBase();
-						if( base )
-						{
-							auto& editorID = formEditorIDMap[ base->GetFormID() ];
-							shouldApplyLocationalDamage = std::regex_match( editorID, locationalSetting.editorID );
-						}
-					}
-
-					// Final success chance check
-					float successHPFactor = GetHPFactor( targetActor, locationalSetting.successHPFactor, g_fLastHitDamage, locationalSetting.successHPFactorCap );
-					int finalSuccessChance = (int)(locationalSetting.successChance * successHPFactor);
-					if( shouldApplyLocationalDamage && RandomPercent( finalSuccessChance ) )
+					
+					if( RandomPercent( finalSuccessChance ) &&
+						locationalSetting.filter.IsActorVaild( targetActor, &formEditorIDMap ) )
 					{
 						std::lock_guard<std::mutex> lock( mutex );
 

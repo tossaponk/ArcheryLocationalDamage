@@ -188,6 +188,98 @@ public:
 	}
 };
 
+struct ActorFilter
+{
+	std::regex						editorID;
+	RE::SEX							sex;
+	std::vector<StringFilterList>	keywordInclude;
+	std::vector<StringFilterList>	keywordExclude;
+	std::vector<std::regex>			raceInclude;
+	std::vector<std::regex>			raceExclude;
+
+	// Editor ID map must be provided to filter by form editor ID
+	bool IsActorVaild( RE::Actor* a_actor, std::unordered_map<RE::FormID,std::string>* a_editorIDMap = NULL )
+	{
+		// Default to true if there is no filter.
+		bool isVaild = keywordInclude.size() == 0;
+
+		// Check if the actor actually has a keyword
+		for( auto& filter : keywordInclude )
+		{
+			if( filter.Evaluate( a_actor ) )
+			{
+				isVaild = true;
+				break;
+			}
+		}
+
+		// Check for exclusion filter
+		if( isVaild && keywordExclude.size() > 0 )
+		{
+			for( auto& filter : keywordExclude )
+			{
+				if( filter.Evaluate( a_actor ) )
+				{
+					isVaild = false;
+					break;
+				}
+			}
+		}
+
+		// Check for race
+		if( isVaild && raceInclude.size() > 0 )
+		{
+			isVaild = false;
+			auto race = a_actor->GetRace();
+			for( auto& filter : raceInclude )
+			{
+				isVaild = std::regex_match( race->GetFullName(), filter );
+
+				if( isVaild )
+					break;
+			}
+		}
+
+		if( isVaild && raceExclude.size() > 0 )
+		{
+			auto race = a_actor->GetRace();
+			for( auto& filter : raceExclude )
+			{
+				isVaild = std::regex_match( race->GetFullName(), filter );
+
+				if( !isVaild )
+					break;
+			}
+		}
+
+		// Check for sex
+		if( isVaild && sex != RE::SEX::kNone )
+		{
+			auto targetSex = a_actor->GetActorBase()->GetSex();
+			if( targetSex != RE::SEX::kNone )
+				isVaild = targetSex == sex;
+		}
+
+		// Editor ID test
+		if( isVaild && !editorID._Empty() )
+		{
+			if( a_editorIDMap )
+			{
+				auto base = a_actor->GetActorBase();
+				if( base )
+				{
+					auto& baseEditorID = (*a_editorIDMap)[ base->GetFormID() ];
+					isVaild = std::regex_match( baseEditorID, editorID );
+				}
+			}
+			else
+				isVaild = false;
+		}
+
+		return isVaild;
+	}
+};
+
 static std::vector<std::string> split( const char* a_input, const char* a_regex ) 
 {
 	// passing -1 as the submatch index parameter performs splitting
