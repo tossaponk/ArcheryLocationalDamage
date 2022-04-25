@@ -12,10 +12,16 @@ bool g_bEnableFloatingText = true;
 bool g_bHitEffectNotification = true;
 bool g_bNPCFloatingNotification = false;
 bool g_bIgnoreHitboxCheck = false;
-float g_fHPFactor = 0.5f;
+bool g_bEnableShotDifficultyBonus = true;
+bool g_bEnableEXPMultiplier = true;
+bool g_bShotDifficultyReport = true;
+float g_fShotDifficultyTimeFactor = 2;
+float g_fShotDifficultyMoveFactor = 1;
+float g_fShotDifficultyMax = 10.0f;
+float g_fHPFactor = 0.25f;
 float g_fFloatingOffsetX = 0;
-float g_fFloatingOffsetY = 0.05f;
-long g_nNotificationMode = 1;
+float g_fFloatingOffsetY = 0.04f;
+long g_nNotificationMode = NotificationMode::Floating;
 std::regex g_sExcludeRegexp;
 std::regex g_PlayerNodes;
 
@@ -29,20 +35,27 @@ void Settings::Load()
 	if( iniFile.GetLongValue( "Version", "Major", 1 ) < 2 )
 		stl::report_and_fail( "You are using an old version of the INI file. Please download the new version or read the mod description page on how to upgrade the INI to the new version before continuing." );
 
-	g_bDebugNotification		= iniFile.GetBoolValue( "Settings", "DebugNotification", false );
-	g_bPlayerNotification		= iniFile.GetBoolValue( "Settings", "PlayerHitNotification", false );
-	g_bPlayerHitSound			= iniFile.GetBoolValue( "Settings", "PlayerHitSound", true );
-	g_nNotificationMode			= iniFile.GetLongValue( "Settings", "HitNotificationMode", NotificationMode::Floating );
-	g_bHitEffectNotification	= iniFile.GetBoolValue( "Settings", "HitEffectNotification", true );
-	g_bNPCFloatingNotification	= iniFile.GetBoolValue( "Settings", "NPCHitNotification", false );
-	g_bIgnoreHitboxCheck		= iniFile.GetBoolValue( "Settings", "IgnoreHitboxCheck", false );
-	g_sExcludeRegexp			= iniFile.GetValue( "Settings", "LocationExclude", "" );
-	g_PlayerNodes				= iniFile.GetValue( "Settings", "PlayerNodeInclude", ".*" );
-	g_fHPFactor					= (float)iniFile.GetDoubleValue( "Settings", "HPFactor", 50 ) / 100.0f;
-	g_bEffectChanceCap			= iniFile.GetBoolValue( "Settings", "HPFactorCap", true );
-	g_bAmplifyEnchantment		= iniFile.GetBoolValue( "Settings", "AmplifyEnchantment", true );
-	g_fFloatingOffsetX			= (float)iniFile.GetDoubleValue( "Settings", "FloatingTextOffsetX", 0 );
-	g_fFloatingOffsetY			= (float)iniFile.GetDoubleValue( "Settings", "FloatingTextOffsetY", 0.04 );
+	g_bEnableEXPMultiplier			= iniFile.GetBoolValue( "Experience", "EnableMultiplier", g_bEnableEXPMultiplier );
+	g_bEnableShotDifficultyBonus	= iniFile.GetBoolValue( "Experience", "EnableShotDifficultyBonus", g_bEnableShotDifficultyBonus );
+	g_bShotDifficultyReport			= iniFile.GetBoolValue( "Experience", "ShotDifficultyReport", g_bShotDifficultyReport );
+	g_fShotDifficultyTimeFactor		= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyTimeFactor", g_fShotDifficultyTimeFactor );
+	g_fShotDifficultyMoveFactor		= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyMoveFactor", g_fShotDifficultyMoveFactor );
+	g_fShotDifficultyMax			= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyMax", g_fShotDifficultyMax );
+
+	g_bDebugNotification			= iniFile.GetBoolValue( "Settings", "DebugNotification", g_bDebugNotification );
+	g_bPlayerNotification			= iniFile.GetBoolValue( "Settings", "PlayerHitNotification", g_bPlayerNotification );
+	g_bPlayerHitSound				= iniFile.GetBoolValue( "Settings", "PlayerHitSound", g_bPlayerHitSound );
+	g_nNotificationMode				= iniFile.GetLongValue( "Settings", "HitNotificationMode", g_nNotificationMode );
+	g_bHitEffectNotification		= iniFile.GetBoolValue( "Settings", "HitEffectNotification", g_bHitEffectNotification );
+	g_bNPCFloatingNotification		= iniFile.GetBoolValue( "Settings", "NPCHitNotification", g_bNPCFloatingNotification );
+	g_bIgnoreHitboxCheck			= iniFile.GetBoolValue( "Settings", "IgnoreHitboxCheck", g_bIgnoreHitboxCheck );
+	g_sExcludeRegexp				= iniFile.GetValue( "Settings", "LocationExclude", "" );
+	g_PlayerNodes					= iniFile.GetValue( "Settings", "PlayerNodeInclude", ".*" );
+	g_fHPFactor						= (float)iniFile.GetDoubleValue( "Settings", "HPFactor", 25 ) / 100.0f;
+	g_bEffectChanceCap				= iniFile.GetBoolValue( "Settings", "HPFactorCap", g_bEffectChanceCap );
+	g_bAmplifyEnchantment			= iniFile.GetBoolValue( "Settings", "AmplifyEnchantment", g_bAmplifyEnchantment );
+	g_fFloatingOffsetX				= (float)iniFile.GetDoubleValue( "Settings", "FloatingTextOffsetX", g_fFloatingOffsetX );
+	g_fFloatingOffsetY				= (float)iniFile.GetDoubleValue( "Settings", "FloatingTextOffsetY", g_fFloatingOffsetY );
 
 	// Sort section priority by their number
 	std::list<CSimpleIni::Entry> sectionList;

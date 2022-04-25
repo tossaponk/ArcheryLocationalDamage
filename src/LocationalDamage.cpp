@@ -15,6 +15,12 @@ extern bool g_bEnableFloatingText;
 extern bool g_bHitEffectNotification;
 extern bool g_bNPCFloatingNotification;
 extern bool g_bIgnoreHitboxCheck;
+extern bool g_bEnableShotDifficultyBonus;
+extern bool g_bEnableEXPMultiplier;
+extern bool g_bShotDifficultyReport;
+extern float g_fShotDifficultyTimeFactor;
+extern float g_fShotDifficultyMoveFactor;
+extern float g_fShotDifficultyMax;
 extern float g_fNormalMult;
 extern float g_fDamageMult;
 extern float g_fHPFactor;
@@ -87,7 +93,7 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 		if( !hitPart || g_bIgnoreHitboxCheck )
 		{
 			float hitDist;
-			hitPart = FindClosestHitNode( a_target->Get3D()->AsNode(), a_location, hitDist, a_target->IsPlayerRef() );
+			hitPart = FindClosestHitNode( a_target->Get3D()->AsNode(), a_location, hitDist, a_target->IsPlayerRef(), g_bIgnoreHitboxCheck );
 		}
 		
 		if( hitPart )
@@ -264,7 +270,44 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 			}
 
 			if( hitDataOverride.aggressor )
+			{
 				g_HitDataOverride.push_back( hitDataOverride );
+
+				if( shooterIsPlayer )
+				{
+					float expMult = 1;
+					// Reward additional EXP if enabled
+					if( g_bEnableEXPMultiplier && hitDataOverride.damageMult > 1 )
+						expMult += hitDataOverride.damageMult - 1;
+
+					// Reward shot difficulty EXP if enabled
+					if( g_bEnableShotDifficultyBonus )
+					{
+						float shotDifficulty = CalculateShotDifficulty( a_projectile, targetActor, g_fShotDifficultyTimeFactor, g_fShotDifficultyMoveFactor );
+						
+						// Clamp to limit
+						shotDifficulty = min( g_fShotDifficultyMax, shotDifficulty );
+
+						if( g_bShotDifficultyReport )
+							RE::DebugNotification( fmt::format( "Shot difficulty: {:0.1f}", shotDifficulty ).c_str(), NULL, false );
+
+						expMult *= shotDifficulty;
+					}
+
+					if( expMult > 1 )
+					{
+						auto player = static_cast<RE::PlayerCharacter*>( shooterActor );
+						auto weapon = a_projectile->weaponSource;
+						if( weapon )
+						{
+							// Skyrim give EXP equals to weapon base attack damage by default (1x)
+							auto baseEXP = weapon->GetAttackDamage();
+							// Only give the amount of EXP over 1x since the game is already rewarded the player at this point
+							player->AddSkillExperience( weapon->weaponData.skill.get(), baseEXP * (expMult - 1) );
+						}
+					}
+				}
+			}
 
 			bool isFPS = false;
 			auto camera = RE::PlayerCamera::GetSingleton();

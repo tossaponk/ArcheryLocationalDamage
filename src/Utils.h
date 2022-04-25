@@ -85,7 +85,6 @@ public:
 				lookupFilter.push_back( &filter );
 		}
 
-		// Search active effects if both actor and armor has none of the keyword
 		auto activeEffects = a_actor->GetActiveEffectList();
 		for( auto activeEffect : *activeEffects )
 		{
@@ -308,7 +307,7 @@ static std::regex CreateRegex( const char* a_str )
 
 extern std::regex g_sExcludeRegexp;
 extern std::regex g_PlayerNodes;
-static RE::NiNode* FindClosestHitNode( RE::NiNode* a_root, RE::NiPoint3* a_pos, float& a_dist, bool a_isPlayer )
+static RE::NiNode* FindClosestHitNode( RE::NiNode* a_root, RE::NiPoint3* a_pos, float& a_dist, bool a_isPlayer, bool a_ignoreHitboxCheck = false )
 {
 	float childMinDist = 1000000;
 	RE::NiNode* childNode = NULL;
@@ -335,10 +334,9 @@ static RE::NiNode* FindClosestHitNode( RE::NiNode* a_root, RE::NiPoint3* a_pos, 
 		}
 	}
 
-
 	// Only check against node with collision object
 	// Or if player is in first person mode then all of the nodes will not having any collision object
-	if( a_root->collisionObject || a_isPlayer )
+	if( a_ignoreHitboxCheck || a_isPlayer || a_root->collisionObject )
 	{
 		// Do not check excluded node
 		if( !std::regex_match( a_root->name.c_str(), g_sExcludeRegexp ) )
@@ -370,6 +368,54 @@ static RE::NiNode* FindClosestHitNode( RE::NiNode* a_root, RE::NiPoint3* a_pos, 
 
 	a_dist = 1000000;
 	return NULL;
+}
+
+static float CalculateShotDifficulty( RE::Projectile* a_projectile, RE::Actor* a_target, float a_flightTimeFactor, float a_moveFactor )
+{
+	float shotDifficulty = a_projectile->lifeRemaining * a_flightTimeFactor;
+
+	// Add moving target bonus
+	RE::NiPoint3 targetVelocity;
+	RE::NiPoint3 attackVector;
+	a_projectile->GetLinearVelocity( attackVector );
+	a_target->GetLinearVelocity( targetVelocity );
+
+	float sizeFactor = 1;
+	auto targetController = a_target->GetCharController();
+	RE::BSBound* targetBound = NULL;
+	if( targetController )
+	{
+		targetBound = &targetController->collisionBound;
+		if( targetBound )
+			sizeFactor *= 65.0f / targetBound->extents.z; // Bonus for a short target like a rabbit or a penalty on tall target. (65 is normal sized NPC)
+	}
+
+	// Calculate cross vector for shot difficulty
+	// A target moving toward or away from the player is not that hard to shoot
+	// But it becomes a lot harder when they're moving perpendicular to the player, especially when they're really far away
+	attackVector.Unitize();
+	auto targetSpeed = targetVelocity.Unitize();
+	RE::NiPoint3 movementCross = targetVelocity.Cross( attackVector );
+	if( targetSpeed != 0 )
+	{
+		float crossFactor = movementCross.Length();
+		float movementBonus = targetSpeed / 500.0f;
+		float movementDifficulty = pow( 3.0f, 1 + a_projectile->lifeRemaining * 2 ) - 3;
+		movementDifficulty *= ( movementBonus + crossFactor ) * a_moveFactor;
+
+		// extents.y is the width of the side of an actor when it's moving forward
+		if( targetBound && targetBound->extents.y != 0 )
+		{
+			float bodyLengthSpeed = targetSpeed / targetBound->extents.y; // Speed vs size in body length per second
+			float bodySpeedFactor = 1 + bodyLengthSpeed / 5.0f * crossFactor;
+			movementDifficulty *= bodySpeedFactor;
+		}
+			
+		shotDifficulty += movementDifficulty;
+	}
+
+	// Convert to multiplier
+	return shotDifficulty + 1;
 }
 
 #pragma warning(pop)
