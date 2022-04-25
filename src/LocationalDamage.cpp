@@ -16,7 +16,7 @@ extern bool g_bHitEffectNotification;
 extern bool g_bNPCFloatingNotification;
 extern bool g_bIgnoreHitboxCheck;
 extern bool g_bEnableDifficultyBonus;
-extern bool g_bEnableDamageMultiplier;
+extern bool g_bEnableLocationMultiplier;
 extern bool g_bShotDifficultyReport;
 extern float g_fShotDifficultyTimeFactor;
 extern float g_fShotDifficultyMoveFactor;
@@ -103,6 +103,7 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 			bool locationHit		= false;
 			bool shooterIsPlayer	= shooterActor && shooterActor->IsPlayerRef();
 			bool targetIsPlayer		= targetActor->IsPlayerRef();
+			float difficulty		= 1;
 
 			// Shield node has a strange name, need to check parent
 			if( hitPart->parent && hitPart->parent->name == "SHIELD" )
@@ -132,6 +133,8 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 						hitDataOverride.target		= a_target;
 						hitDataOverride.location	= *a_location;
 						hitDataOverride.damageMult	*= locationalSetting.damageMult;
+
+						difficulty = max( difficulty, locationalSetting.difficulty );
 
 						// Set expiration time to prevent build up of unprocessed hits (1/10 sec)
 						QueryPerformanceCounter( (LARGE_INTEGER*)&hitDataOverride.expireTimestamp );
@@ -277,8 +280,8 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 				if( shooterIsPlayer )
 				{
 					// Reward additional EXP if enabled
-					if( g_bEnableDamageMultiplier && hitDataOverride.damageMult > 1 )
-						expMult += hitDataOverride.damageMult - 1;
+					if( g_bEnableLocationMultiplier && difficulty > 1 )
+						expMult += difficulty - 1;
 				}
 			}
 
@@ -288,10 +291,6 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 				if( g_bEnableDifficultyBonus )
 				{
 					float shotDifficulty = CalculateShotDifficulty( a_projectile, targetActor, g_fShotDifficultyTimeFactor, g_fShotDifficultyMoveFactor );
-
-					// Clamp to limit
-					shotDifficulty = min( g_fShotDifficultyMax, shotDifficulty );
-
 					expMult *= shotDifficulty;
 				}
 
@@ -309,6 +308,9 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 					if( shouldShowNotification )
 						RE::DebugNotification( reportStr.c_str(), NULL, false );
 				}
+
+				// Clamp to limit
+				expMult = min( g_fShotDifficultyMax, expMult );
 
 				if( expMult > 1 )
 				{

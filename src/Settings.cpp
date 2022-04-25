@@ -13,7 +13,7 @@ bool g_bHitEffectNotification = true;
 bool g_bNPCFloatingNotification = false;
 bool g_bIgnoreHitboxCheck = false;
 bool g_bEnableDifficultyBonus = true;
-bool g_bEnableDamageMultiplier = true;
+bool g_bEnableLocationMultiplier = true;
 bool g_bShotDifficultyReport = true;
 float g_fShotDifficultyTimeFactor = 1;
 float g_fShotDifficultyMoveFactor = 1;
@@ -35,8 +35,8 @@ void Settings::Load()
 	if( iniFile.GetLongValue( "Version", "Major", 1 ) < 2 )
 		stl::report_and_fail( "You are using an old version of the INI file. Please download the new version or read the mod description page on how to upgrade the INI to the new version before continuing." );
 
-	g_bEnableDamageMultiplier		= iniFile.GetBoolValue( "Experience", "EnableDamageMultiplier", g_bEnableDamageMultiplier );
-	g_bEnableDifficultyBonus	= iniFile.GetBoolValue( "Experience", "EnableShotDifficultyBonus", g_bEnableDifficultyBonus );
+	g_bEnableLocationMultiplier		= iniFile.GetBoolValue( "Experience", "EnableLocationMultiplier", g_bEnableLocationMultiplier );
+	g_bEnableDifficultyBonus		= iniFile.GetBoolValue( "Experience", "EnableDifficultyBonus", g_bEnableDifficultyBonus );
 	g_bShotDifficultyReport			= iniFile.GetBoolValue( "Experience", "ShotDifficultyReport", g_bShotDifficultyReport );
 	g_fShotDifficultyTimeFactor		= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyTimeFactor", g_fShotDifficultyTimeFactor );
 	g_fShotDifficultyMoveFactor		= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyMoveFactor", g_fShotDifficultyMoveFactor );
@@ -78,6 +78,7 @@ void Settings::Load()
 
 			setting.shouldContinue		= iniFile.GetBoolValue( sectionIter.pItem, "Continue", false );
 			setting.damageMult			= (float)iniFile.GetDoubleValue( sectionIter.pItem, "Multiplier", 1.0 );
+			setting.difficulty			= (float)iniFile.GetDoubleValue( sectionIter.pItem, "Difficulty", setting.damageMult );
 			setting.successHPFactor		= (float)iniFile.GetDoubleValue( sectionIter.pItem, "SuccessHPFactor", 0 ) / 100.0f;
 			setting.successChance		= iniFile.GetLongValue( sectionIter.pItem, "SuccessChance", 100 );
 			setting.successHPFactorCap	= iniFile.GetBoolValue( sectionIter.pItem, "SuccessHPFactorCap", true );

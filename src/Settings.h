@@ -21,6 +21,7 @@ struct Settings
 		bool							enable = false;
 		bool							shouldContinue = false;
 		float							damageMult = 1.0f;
+		float							difficulty = 1.0f;
 		bool							deflectProjectile = false;
 		int								successChance = 100;
 		float							successHPFactor = 0;
