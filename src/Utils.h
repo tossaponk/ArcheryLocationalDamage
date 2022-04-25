@@ -372,7 +372,9 @@ static RE::NiNode* FindClosestHitNode( RE::NiNode* a_root, RE::NiPoint3* a_pos, 
 
 static float CalculateShotDifficulty( RE::Projectile* a_projectile, RE::Actor* a_target, float a_flightTimeFactor, float a_moveFactor )
 {
-	float shotDifficulty = a_projectile->lifeRemaining * a_flightTimeFactor;
+	float shotDifficulty = 0;
+	float timeDifficulty = ( powf( 1 + a_projectile->lifeRemaining, 4 ) - 1 ) / 20.0f * a_flightTimeFactor;
+	shotDifficulty += timeDifficulty;
 
 	// Add moving target bonus
 	RE::NiPoint3 targetVelocity;
@@ -399,20 +401,27 @@ static float CalculateShotDifficulty( RE::Projectile* a_projectile, RE::Actor* a
 	if( targetSpeed != 0 )
 	{
 		float crossFactor = movementCross.Length();
-		float movementBonus = targetSpeed / 500.0f;
-		float movementDifficulty = pow( 3.0f, 1 + a_projectile->lifeRemaining * 2 ) - 3;
-		movementDifficulty *= ( movementBonus + crossFactor ) * a_moveFactor;
-
+		float movementFactor = 1.0f;
+		float bodyLengthSpeed = 0;
 		// extents.y is the width of the side of an actor when it's moving forward
 		if( targetBound && targetBound->extents.y != 0 )
 		{
-			float bodyLengthSpeed = targetSpeed / targetBound->extents.y; // Speed vs size in body length per second
-			float bodySpeedFactor = 1 + bodyLengthSpeed / 5.0f * crossFactor;
-			movementDifficulty *= bodySpeedFactor;
+			bodyLengthSpeed = targetSpeed / targetBound->extents.y; // Speed vs size in body length per second
+			movementFactor = bodyLengthSpeed / 2.5f * crossFactor;
 		}
-			
+
+		float movementDifficulty = powf( 3.0f, 1 + a_projectile->lifeRemaining * 2 ) - 3;
+		movementDifficulty *= ( movementFactor * crossFactor ) * a_moveFactor;
+
 		shotDifficulty += movementDifficulty;
+#ifdef _DEBUG
+ 		RE::ConsoleLog::GetSingleton()->Print( "TDiff: %0.2f, CFactor: %0.2f, Spd: %0.1f, BSpd: %0.2f, MFactor: %0.2f, SFactor: %0.2f",
+			timeDifficulty, crossFactor, targetSpeed, bodyLengthSpeed, movementFactor, sizeFactor );
+#endif
 	}
+
+	// Multiply by size factor
+	shotDifficulty *= sizeFactor;
 
 	// Convert to multiplier
 	return shotDifficulty + 1;

@@ -25,18 +25,13 @@ RE::GFxMovie* FloatingDamage::GetMenu()
 	return nullptr;
 }
 
-bool FloatingDamage::CreateFloatingText( const char* a_text, unsigned int a_color, int a_size )
+bool FloatingDamage::CreateFloatingText( const char* a_text, uint32_t a_color, uint32_t a_size )
 {
 	auto menu = GetMenu();
 	if( menu == nullptr || worldToCamMatrix == nullptr )
 		return false;
 
-	DisplayText text;
-	text.text	= a_text;
-	text.color	= a_color;
-	text.size	= a_size;
-
-	displayList.push_back( text );
+	displayList.push_back( { a_text, a_color, a_size } );
 
 	return true;
 }

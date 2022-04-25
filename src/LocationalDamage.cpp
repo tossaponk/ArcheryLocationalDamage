@@ -15,8 +15,8 @@ extern bool g_bEnableFloatingText;
 extern bool g_bHitEffectNotification;
 extern bool g_bNPCFloatingNotification;
 extern bool g_bIgnoreHitboxCheck;
-extern bool g_bEnableShotDifficultyBonus;
-extern bool g_bEnableEXPMultiplier;
+extern bool g_bEnableDifficultyBonus;
+extern bool g_bEnableDamageMultiplier;
 extern bool g_bShotDifficultyReport;
 extern float g_fShotDifficultyTimeFactor;
 extern float g_fShotDifficultyMoveFactor;
@@ -269,42 +269,57 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 				}
 			}
 
+			float expMult = 1;
 			if( hitDataOverride.aggressor )
 			{
 				g_HitDataOverride.push_back( hitDataOverride );
 
 				if( shooterIsPlayer )
 				{
-					float expMult = 1;
 					// Reward additional EXP if enabled
-					if( g_bEnableEXPMultiplier && hitDataOverride.damageMult > 1 )
+					if( g_bEnableDamageMultiplier && hitDataOverride.damageMult > 1 )
 						expMult += hitDataOverride.damageMult - 1;
+				}
+			}
 
-					// Reward shot difficulty EXP if enabled
-					if( g_bEnableShotDifficultyBonus )
+			if( shooterIsPlayer )
+			{
+				// Reward shot difficulty EXP if enabled
+				if( g_bEnableDifficultyBonus )
+				{
+					float shotDifficulty = CalculateShotDifficulty( a_projectile, targetActor, g_fShotDifficultyTimeFactor, g_fShotDifficultyMoveFactor );
+
+					// Clamp to limit
+					shotDifficulty = min( g_fShotDifficultyMax, shotDifficulty );
+
+					expMult *= shotDifficulty;
+				}
+
+				if( g_bShotDifficultyReport )
+				{
+					auto reportStr = fmt::format( "Shot difficulty: {:0.1f}", expMult );
+					bool shouldShowNotification = 
+						g_nNotificationMode == NotificationMode::Both || g_nNotificationMode == NotificationMode::Screen;
+					if( g_nNotificationMode == NotificationMode::Both || g_nNotificationMode == NotificationMode::Floating )
 					{
-						float shotDifficulty = CalculateShotDifficulty( a_projectile, targetActor, g_fShotDifficultyTimeFactor, g_fShotDifficultyMoveFactor );
-						
-						// Clamp to limit
-						shotDifficulty = min( g_fShotDifficultyMax, shotDifficulty );
-
-						if( g_bShotDifficultyReport )
-							RE::DebugNotification( fmt::format( "Shot difficulty: {:0.1f}", shotDifficulty ).c_str(), NULL, false );
-
-						expMult *= shotDifficulty;
+						if( !FloatingDamage::CreateFloatingText( reportStr.c_str(), 0xFF8000, 24) )
+							shouldShowNotification = true;
 					}
 
-					if( expMult > 1 )
+					if( shouldShowNotification )
+						RE::DebugNotification( reportStr.c_str(), NULL, false );
+				}
+
+				if( expMult > 1 )
+				{
+					auto player = static_cast<RE::PlayerCharacter*>( shooterActor );
+					auto weapon = a_projectile->weaponSource;
+					if( weapon )
 					{
-						auto player = static_cast<RE::PlayerCharacter*>( shooterActor );
-						auto weapon = a_projectile->weaponSource;
-						if( weapon )
-						{
-							// Skyrim give EXP equals to weapon base attack damage by default (1x)
-							auto baseEXP = weapon->GetAttackDamage();
-							// Only give the amount of EXP over 1x since the game is already rewarded the player at this point
-							player->AddSkillExperience( weapon->weaponData.skill.get(), baseEXP * (expMult - 1) );
-						}
+						// Skyrim give EXP equals to weapon base attack damage by default (1x)
+						auto baseEXP = weapon->GetAttackDamage();
+						// Only give the amount of EXP over 1x since the game is already rewarded the player at this point
+						player->AddSkillExperience( weapon->weaponData.skill.get(), baseEXP * (expMult - 1) );
 					}
 				}
 			}

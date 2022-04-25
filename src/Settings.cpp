@@ -12,12 +12,12 @@ bool g_bEnableFloatingText = true;
 bool g_bHitEffectNotification = true;
 bool g_bNPCFloatingNotification = false;
 bool g_bIgnoreHitboxCheck = false;
-bool g_bEnableShotDifficultyBonus = true;
-bool g_bEnableEXPMultiplier = true;
+bool g_bEnableDifficultyBonus = true;
+bool g_bEnableDamageMultiplier = true;
 bool g_bShotDifficultyReport = true;
-float g_fShotDifficultyTimeFactor = 2;
+float g_fShotDifficultyTimeFactor = 1;
 float g_fShotDifficultyMoveFactor = 1;
-float g_fShotDifficultyMax = 10.0f;
+float g_fShotDifficultyMax = 15.0f;
 float g_fHPFactor = 0.25f;
 float g_fFloatingOffsetX = 0;
 float g_fFloatingOffsetY = 0.04f;
@@ -35,8 +35,8 @@ void Settings::Load()
 	if( iniFile.GetLongValue( "Version", "Major", 1 ) < 2 )
 		stl::report_and_fail( "You are using an old version of the INI file. Please download the new version or read the mod description page on how to upgrade the INI to the new version before continuing." );
 
-	g_bEnableEXPMultiplier			= iniFile.GetBoolValue( "Experience", "EnableMultiplier", g_bEnableEXPMultiplier );
-	g_bEnableShotDifficultyBonus	= iniFile.GetBoolValue( "Experience", "EnableShotDifficultyBonus", g_bEnableShotDifficultyBonus );
+	g_bEnableDamageMultiplier		= iniFile.GetBoolValue( "Experience", "EnableDamageMultiplier", g_bEnableDamageMultiplier );
+	g_bEnableDifficultyBonus	= iniFile.GetBoolValue( "Experience", "EnableShotDifficultyBonus", g_bEnableDifficultyBonus );
 	g_bShotDifficultyReport			= iniFile.GetBoolValue( "Experience", "ShotDifficultyReport", g_bShotDifficultyReport );
 	g_fShotDifficultyTimeFactor		= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyTimeFactor", g_fShotDifficultyTimeFactor );
 	g_fShotDifficultyMoveFactor		= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyMoveFactor", g_fShotDifficultyMoveFactor );
