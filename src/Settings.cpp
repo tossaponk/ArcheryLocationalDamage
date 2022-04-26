@@ -16,6 +16,7 @@ bool g_bEnableDifficultyBonus = true;
 bool g_bEnableLocationMultiplier = true;
 bool g_bShotDifficultyReport = true;
 float g_fShotDifficultyTimeFactor = 1;
+float g_fShotDifficultyDistFactor = 1;
 float g_fShotDifficultyMoveFactor = 1;
 float g_fShotDifficultyMax = 15.0f;
 float g_fHPFactor = 0.25f;
@@ -39,6 +40,7 @@ void Settings::Load()
 	g_bEnableDifficultyBonus		= iniFile.GetBoolValue( "Experience", "EnableDifficultyBonus", g_bEnableDifficultyBonus );
 	g_bShotDifficultyReport			= iniFile.GetBoolValue( "Experience", "ShotDifficultyReport", g_bShotDifficultyReport );
 	g_fShotDifficultyTimeFactor		= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyTimeFactor", g_fShotDifficultyTimeFactor );
+	g_fShotDifficultyDistFactor		= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyDistFactor", g_fShotDifficultyDistFactor );
 	g_fShotDifficultyMoveFactor		= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyMoveFactor", g_fShotDifficultyMoveFactor );
 	g_fShotDifficultyMax			= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyMax", g_fShotDifficultyMax );
 

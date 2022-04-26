@@ -267,7 +267,8 @@ struct ActorFilter
 				auto base = a_actor->GetActorBase();
 				if( base )
 				{
-					auto& baseEditorID = (*a_editorIDMap)[ base->GetFormID() ];
+					auto baseRoot = base->GetRootFaceNPC();
+					auto& baseEditorID = (*a_editorIDMap)[ baseRoot->GetFormID() ];
 					isVaild = std::regex_match( baseEditorID, editorID );
 				}
 			}
@@ -370,11 +371,10 @@ static RE::NiNode* FindClosestHitNode( RE::NiNode* a_root, RE::NiPoint3* a_pos, 
 	return NULL;
 }
 
-static float CalculateShotDifficulty( RE::Projectile* a_projectile, RE::Actor* a_target, float a_flightTimeFactor, float a_moveFactor )
+static float CalculateShotDifficulty( RE::Projectile* a_projectile, RE::Actor* a_target, float a_flightTimeFactor, float a_distanceFactor, float a_moveFactor )
 {
-	float shotDifficulty = 0;
-	float timeDifficulty = ( powf( 1 + a_projectile->lifeRemaining, 4 ) - 1 ) / 20.0f * a_flightTimeFactor;
-	shotDifficulty += timeDifficulty;
+	float timeDifficulty = ( powf( 1 + a_projectile->lifeRemaining, 2 ) - 1 ) / 2;
+	timeDifficulty *= a_flightTimeFactor;
 
 	// Add moving target bonus
 	RE::NiPoint3 targetVelocity;
@@ -392,17 +392,22 @@ static float CalculateShotDifficulty( RE::Projectile* a_projectile, RE::Actor* a
 			sizeFactor *= 65.0f / targetBound->extents.z; // Bonus for a short target like a rabbit or a penalty on tall target. (65 is normal sized NPC)
 	}
 
+	float distDifficulty = powf( 1 + a_projectile->distanceMoved / 6000.0f, 2 ) - 1;
+	distDifficulty *= a_distanceFactor;
+
 	// Calculate cross vector for shot difficulty
 	// A target moving toward or away from the player is not that hard to shoot
 	// But it becomes a lot harder when they're moving perpendicular to the player, especially when they're really far away
 	attackVector.Unitize();
 	auto targetSpeed = targetVelocity.Unitize();
 	RE::NiPoint3 movementCross = targetVelocity.Cross( attackVector );
+	float crossFactor = 0;
+	float movementFactor = 0;
+	float bodyLengthSpeed = 0;
+	float movementDifficulty = 0;
 	if( targetSpeed != 0 )
 	{
-		float crossFactor = movementCross.Length();
-		float movementFactor = 1.0f;
-		float bodyLengthSpeed = 0;
+		crossFactor = movementCross.Length();
 		// extents.y is the width of the side of an actor when it's moving forward
 		if( targetBound && targetBound->extents.y != 0 )
 		{
@@ -410,18 +415,22 @@ static float CalculateShotDifficulty( RE::Projectile* a_projectile, RE::Actor* a
 			movementFactor = bodyLengthSpeed / 2.5f * crossFactor;
 		}
 
-		float movementDifficulty = powf( 2.0f, 1 + a_projectile->lifeRemaining * 2 ) - 2;
-		movementDifficulty *= ( movementFactor * crossFactor ) * a_moveFactor;
-
-		shotDifficulty += movementDifficulty;
-#ifdef _DEBUG
- 		RE::ConsoleLog::GetSingleton()->Print( "TDiff: %0.2f, CFactor: %0.2f, Spd: %0.1f, BSpd: %0.2f, MFactor: %0.2f, SFactor: %0.2f",
-			timeDifficulty, crossFactor, targetSpeed, bodyLengthSpeed, movementFactor, sizeFactor );
-#endif
+		movementDifficulty = powf( 2.0f, 1 + a_projectile->lifeRemaining * 2 ) - 2;
+		movementDifficulty *= movementFactor * crossFactor * a_moveFactor;
 	}
+
+	float shotDifficulty = 0;
+	shotDifficulty += timeDifficulty;
+	shotDifficulty += distDifficulty;
+	shotDifficulty += movementDifficulty;
 
 	// Multiply by size factor
 	shotDifficulty *= sizeFactor;
+
+#ifdef _DEBUG
+	RE::ConsoleLog::GetSingleton()->Print( "TDiff: %0.2f, DDiff: %0.2f, CFactor: %0.2f, Spd: %0.1f, BSpd: %0.2f, MFactor: %0.2f, SFactor: %0.2f",
+		timeDifficulty, distDifficulty, crossFactor, targetSpeed, bodyLengthSpeed, movementFactor, sizeFactor );
+#endif
 
 	// Convert to multiplier
 	return shotDifficulty + 1;

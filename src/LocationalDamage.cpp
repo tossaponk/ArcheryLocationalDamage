@@ -19,6 +19,7 @@ extern bool g_bEnableDifficultyBonus;
 extern bool g_bEnableLocationMultiplier;
 extern bool g_bShotDifficultyReport;
 extern float g_fShotDifficultyTimeFactor;
+extern float g_fShotDifficultyDistFactor;
 extern float g_fShotDifficultyMoveFactor;
 extern float g_fShotDifficultyMax;
 extern float g_fNormalMult;
@@ -290,7 +291,7 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 				// Reward shot difficulty EXP if enabled
 				if( g_bEnableDifficultyBonus )
 				{
-					float shotDifficulty = CalculateShotDifficulty( a_projectile, targetActor, g_fShotDifficultyTimeFactor, g_fShotDifficultyMoveFactor );
+					float shotDifficulty = CalculateShotDifficulty( a_projectile, targetActor, g_fShotDifficultyTimeFactor, g_fShotDifficultyDistFactor, g_fShotDifficultyMoveFactor );
 					expMult *= shotDifficulty;
 				}
 
