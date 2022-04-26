@@ -410,7 +410,7 @@ static float CalculateShotDifficulty( RE::Projectile* a_projectile, RE::Actor* a
 			movementFactor = bodyLengthSpeed / 2.5f * crossFactor;
 		}
 
-		float movementDifficulty = powf( 3.0f, 1 + a_projectile->lifeRemaining * 2 ) - 3;
+		float movementDifficulty = powf( 2.0f, 1 + a_projectile->lifeRemaining * 2 ) - 2;
 		movementDifficulty *= ( movementFactor * crossFactor ) * a_moveFactor;
 
 		shotDifficulty += movementDifficulty;
