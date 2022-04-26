@@ -36,7 +36,7 @@ bool FloatingDamage::CreateFloatingText( const char* a_text, uint32_t a_color, u
 	return true;
 }
 
-void FloatingDamage::Flush( RE::TESObjectREFR* a_target, RE::NiPoint3* a_location, float a_offsetX, float a_offsetY, float a_alpha )
+void FloatingDamage::Flush( RE::TESObjectREFR* a_target, RE::NiPoint3* a_location, float a_offsetX, float a_offsetY, float a_alpha, bool a_ignoreLOS )
 {
 	if( displayList.empty() )
 		return;
@@ -44,7 +44,7 @@ void FloatingDamage::Flush( RE::TESObjectREFR* a_target, RE::NiPoint3* a_locatio
 	bool hasTargetLOS = true;
 
 	auto player = RE::PlayerCharacter::GetSingleton();
-	if( a_target && a_target != player )
+	if( !a_ignoreLOS && a_target && a_target != player )
 		hasTargetLOS = hasLOSCondition->IsTrue( player, a_target );
 
 	auto menu = GetMenu();

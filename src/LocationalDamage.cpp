@@ -333,7 +333,7 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 
 			// Flush floating text buffer
 			float alpha = (shooterIsPlayer || targetIsPlayer) ? 100.0f : 50.0f;
-			FloatingDamage::Flush( a_target, isFPS ? NULL : a_location, g_fFloatingOffsetX, g_fFloatingOffsetY, alpha );
+			FloatingDamage::Flush( a_target, isFPS ? NULL : a_location, g_fFloatingOffsetX, g_fFloatingOffsetY, alpha, shooterIsPlayer );
 
 			if( g_bDebugNotification )
 			{

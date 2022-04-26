@@ -100,5 +100,5 @@ struct FloatingDamage
 
 	static bool CreateFloatingText( const char* a_text, uint32_t a_color, uint32_t a_size );
 
-	static void Flush( RE::TESObjectREFR* a_target, RE::NiPoint3* a_location, float a_offsetX, float a_offsetY, float a_alpha = 100 );
+	static void Flush( RE::TESObjectREFR* a_target, RE::NiPoint3* a_location, float a_offsetX, float a_offsetY, float a_alpha = 100, bool a_ignoreLOS = false );
 };
