@@ -17,7 +17,6 @@ extern bool g_bNPCFloatingNotification;
 extern bool g_bIgnoreHitboxCheck;
 extern bool g_bEnableDifficultyBonus;
 extern bool g_bEnableLocationMultiplier;
-extern bool g_bShotDifficultyReport;
 extern float g_fShotDifficultyTimeFactor;
 extern float g_fShotDifficultyDistFactor;
 extern float g_fShotDifficultyMoveFactor;
@@ -29,6 +28,7 @@ extern float g_fLastHitDamage;
 extern float g_fFloatingOffsetX;
 extern float g_fFloatingOffsetY;
 extern long g_nNotificationMode;
+extern long g_nEXPNotificationMode;
 extern std::regex g_sExcludeRegexp;
 extern std::regex g_PlayerNodes;
 
@@ -295,12 +295,12 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 					expMult *= shotDifficulty;
 				}
 
-				if( g_bShotDifficultyReport )
+				if( g_nEXPNotificationMode != NotificationMode::None && ( g_bEnableDifficultyBonus || g_bEnableLocationMultiplier ) )
 				{
 					auto reportStr = fmt::format( "Shot difficulty: {:0.1f}", expMult );
 					bool shouldShowNotification = 
-						g_nNotificationMode == NotificationMode::Both || g_nNotificationMode == NotificationMode::Screen;
-					if( g_nNotificationMode == NotificationMode::Both || g_nNotificationMode == NotificationMode::Floating )
+						g_nEXPNotificationMode == NotificationMode::Both || g_nEXPNotificationMode == NotificationMode::Screen;
+					if( g_nEXPNotificationMode == NotificationMode::Both || g_nEXPNotificationMode == NotificationMode::Floating )
 					{
 						if( !FloatingDamage::CreateFloatingText( reportStr.c_str(), 0xFF8000, 24) )
 							shouldShowNotification = true;

@@ -8,7 +8,7 @@ struct StringFilter
 	{
 		kNone = -1,
 		kActorKeyword,
-		kArmorKeyword,
+		kEquipKeyword,
 		kMagicKeyword,
 
 		kTotal
@@ -38,7 +38,7 @@ class StringFilterList
 	enum class Flag
 	{
 		kActorKeyword = 1 << (uint32_t)StringFilter::Type::kActorKeyword,
-		kArmorKeyword = 1 << (uint32_t)StringFilter::Type::kArmorKeyword,
+		kEquipKeyword = 1 << (uint32_t)StringFilter::Type::kEquipKeyword,
 		kMagicKeyword = 1 << (uint32_t)StringFilter::Type::kMagicKeyword,
 	};
 
@@ -131,13 +131,13 @@ public:
 
 	bool ArmorHasKeywords( RE::Actor* a_actor )
 	{
-		if( !HasFilterType( StringFilter::Type::kArmorKeyword ) )
+		if( !HasFilterType( StringFilter::Type::kEquipKeyword ) )
 			return true;
 
 		std::vector<StringFilter*> lookupFilter;
 		for( auto& filter : data )
 		{
-			if( filter.type == StringFilter::Type::kArmorKeyword )
+			if( filter.type == StringFilter::Type::kEquipKeyword )
 				lookupFilter.push_back( &filter );
 		}
 
@@ -392,7 +392,7 @@ static float CalculateShotDifficulty( RE::Projectile* a_projectile, RE::Actor* a
 			sizeFactor *= 65.0f / targetBound->extents.z; // Bonus for a short target like a rabbit or a penalty on tall target. (65 is normal sized NPC)
 	}
 
-	float distDifficulty = powf( 1 + a_projectile->distanceMoved / 6000.0f, 2 ) - 1;
+	float distDifficulty = ( powf( 1 + a_projectile->distanceMoved / 6000.0f, 2 ) - 1 ) / 2;
 	distDifficulty *= a_distanceFactor;
 
 	// Calculate cross vector for shot difficulty
@@ -419,13 +419,18 @@ static float CalculateShotDifficulty( RE::Projectile* a_projectile, RE::Actor* a
 		movementDifficulty *= movementFactor * crossFactor * a_moveFactor;
 	}
 
-	float shotDifficulty = 0;
-	shotDifficulty += timeDifficulty;
-	shotDifficulty += distDifficulty;
-	shotDifficulty += movementDifficulty;
-
 	// Multiply by size factor
-	shotDifficulty *= sizeFactor;
+	distDifficulty		*= sizeFactor;
+	movementDifficulty	*= sizeFactor;
+
+	float shotDifficulty = 0;
+	shotDifficulty		+= timeDifficulty;
+	shotDifficulty		+= distDifficulty;
+	shotDifficulty		+= movementDifficulty;
+
+	// Multiply difficulty by 2 if the target is flying (A flying dragon is very hard to hit)
+	if( a_target->IsFlying() )
+		shotDifficulty *= 2;
 
 #ifdef _DEBUG
 	RE::ConsoleLog::GetSingleton()->Print( "TDiff: %0.2f, DDiff: %0.2f, CFactor: %0.2f, Spd: %0.1f, BSpd: %0.2f, MFactor: %0.2f, SFactor: %0.2f",

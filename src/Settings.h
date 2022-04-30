@@ -49,20 +49,29 @@ struct Settings
 		if( filterOption.size() == 2 )
 		{
 			StringFilter filter;
-			if( filterOption[ 0 ] == "S" )
+			if( filterOption[ 0 ] == "A" )
 				filter.type = StringFilter::Type::kActorKeyword;
-			else if( filterOption[ 0 ] == "A" )
-				filter.type = StringFilter::Type::kArmorKeyword;
+			else if( filterOption[ 0 ] == "E" )
+				filter.type = StringFilter::Type::kEquipKeyword;
 			else if( filterOption[ 0 ] == "M" )
 				filter.type = StringFilter::Type::kMagicKeyword;
+			else
+				stl::report_and_fail( fmt::format( "Unknown keyword type: {}.", filterOption[ 0 ]).c_str() );
 
 			auto keywordList = split( filterOption[ 1 ].c_str(), "\\+" );
 			for( auto keyword : keywordList )
 			{
+				bool isNegate = false;
 				if( keyword[ 0 ] == '-' )
-					filter.AddFilter( keyword.substr( 1 ), true );
-				else
-					filter.AddFilter( keyword );
+				{
+					isNegate = true;
+					keyword = keyword.substr( 1 );
+				}
+
+				// Trim whitespaces
+				SKSE::stl::string::trim( keyword );
+
+				filter.AddFilter( keyword, isNegate );
 			}
 
 			return filter;

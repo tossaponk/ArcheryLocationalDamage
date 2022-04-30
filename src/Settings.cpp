@@ -14,7 +14,6 @@ bool g_bNPCFloatingNotification = false;
 bool g_bIgnoreHitboxCheck = false;
 bool g_bEnableDifficultyBonus = true;
 bool g_bEnableLocationMultiplier = true;
-bool g_bShotDifficultyReport = true;
 float g_fShotDifficultyTimeFactor = 1;
 float g_fShotDifficultyDistFactor = 1;
 float g_fShotDifficultyMoveFactor = 1;
@@ -23,6 +22,7 @@ float g_fHPFactor = 0.25f;
 float g_fFloatingOffsetX = 0;
 float g_fFloatingOffsetY = 0.04f;
 long g_nNotificationMode = NotificationMode::Floating;
+long g_nEXPNotificationMode = NotificationMode::Screen;
 std::regex g_sExcludeRegexp;
 std::regex g_PlayerNodes;
 
@@ -38,7 +38,6 @@ void Settings::Load()
 
 	g_bEnableLocationMultiplier		= iniFile.GetBoolValue( "Experience", "EnableLocationMultiplier", g_bEnableLocationMultiplier );
 	g_bEnableDifficultyBonus		= iniFile.GetBoolValue( "Experience", "EnableDifficultyBonus", g_bEnableDifficultyBonus );
-	g_bShotDifficultyReport			= iniFile.GetBoolValue( "Experience", "ShotDifficultyReport", g_bShotDifficultyReport );
 	g_fShotDifficultyTimeFactor		= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyTimeFactor", g_fShotDifficultyTimeFactor );
 	g_fShotDifficultyDistFactor		= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyDistFactor", g_fShotDifficultyDistFactor );
 	g_fShotDifficultyMoveFactor		= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyMoveFactor", g_fShotDifficultyMoveFactor );
@@ -48,6 +47,7 @@ void Settings::Load()
 	g_bPlayerNotification			= iniFile.GetBoolValue( "Settings", "PlayerHitNotification", g_bPlayerNotification );
 	g_bPlayerHitSound				= iniFile.GetBoolValue( "Settings", "PlayerHitSound", g_bPlayerHitSound );
 	g_nNotificationMode				= iniFile.GetLongValue( "Settings", "HitNotificationMode", g_nNotificationMode );
+	g_nEXPNotificationMode			= iniFile.GetLongValue( "Settings", "EXPNotificationMode", g_nEXPNotificationMode );
 	g_bHitEffectNotification		= iniFile.GetBoolValue( "Settings", "HitEffectNotification", g_bHitEffectNotification );
 	g_bNPCFloatingNotification		= iniFile.GetBoolValue( "Settings", "NPCHitNotification", g_bNPCFloatingNotification );
 	g_bIgnoreHitboxCheck			= iniFile.GetBoolValue( "Settings", "IgnoreHitboxCheck", g_bIgnoreHitboxCheck );
