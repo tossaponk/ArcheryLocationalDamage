@@ -99,6 +99,9 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 		
 		if( hitPart )
 		{
+			// Floating damage UI invocation cannot be done simutaneously from multiple threads.
+			std::lock_guard<std::mutex> lock( mutex );
+
 			HitDataOverride hitDataOverride;
 			auto targetActor		= (RE::Actor*)a_target;
 			bool locationHit		= false;
@@ -128,8 +131,6 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 					if( RandomPercent( finalSuccessChance ) &&
 						locationalSetting.filter.IsActorVaild( targetActor, &formEditorIDMap ) )
 					{
-						std::lock_guard<std::mutex> lock( mutex );
-
 						hitDataOverride.aggressor	= shooterActor;
 						hitDataOverride.target		= a_target;
 						hitDataOverride.location	= *a_location;
