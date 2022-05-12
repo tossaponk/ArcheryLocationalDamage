@@ -373,7 +373,9 @@ static RE::NiNode* FindClosestHitNode( RE::NiNode* a_root, RE::NiPoint3* a_pos, 
 
 static float CalculateShotDifficulty( RE::Projectile* a_projectile, RE::Actor* a_target, float a_flightTimeFactor, float a_distanceFactor, float a_moveFactor )
 {
-	float timeDifficulty = ( powf( 1 + a_projectile->lifeRemaining, 2 ) - 1 ) / 2;
+	// First 0.1 second of flight time do not count as time bonus
+	float timeBonus = max( a_projectile->lifeRemaining - 0.1f, 0 );
+	float timeDifficulty = ( powf( 1 + timeBonus, 2 ) - 1 ) / 2;
 	timeDifficulty *= a_flightTimeFactor;
 
 	// Add moving target bonus
@@ -381,6 +383,9 @@ static float CalculateShotDifficulty( RE::Projectile* a_projectile, RE::Actor* a
 	RE::NiPoint3 attackVector;
 	a_projectile->GetLinearVelocity( attackVector );
 	a_target->GetLinearVelocity( targetVelocity );
+
+	float targetSpeed		= targetVelocity.Unitize();
+	float projectileSpeed	= attackVector.Unitize();
 
 	float sizeFactor = 1;
 	auto targetController = a_target->GetCharController();
@@ -392,14 +397,15 @@ static float CalculateShotDifficulty( RE::Projectile* a_projectile, RE::Actor* a
 			sizeFactor *= 65.0f / targetBound->extents.z; // Bonus for a short target like a rabbit or a penalty on tall target. (65 is normal sized NPC)
 	}
 
-	float distDifficulty = ( powf( 1 + a_projectile->distanceMoved / 6000.0f, 2 ) - 1 ) / 2;
+	// First 0.1 second of travelled distance does not count
+	float distBonus = max( a_projectile->distanceMoved - projectileSpeed * 0.1f, 0 );
+	float distDifficulty = ( powf( 1 + distBonus / 6000.0f, 2 ) - 1 ) / 2;
 	distDifficulty *= a_distanceFactor;
 
 	// Calculate cross vector for shot difficulty
 	// A target moving toward or away from the player is not that hard to shoot
 	// But it becomes a lot harder when they're moving perpendicular to the player, especially when they're really far away
-	attackVector.Unitize();
-	auto targetSpeed = targetVelocity.Unitize();
+
 	RE::NiPoint3 movementCross = targetVelocity.Cross( attackVector );
 	float crossFactor = 0;
 	float movementFactor = 0;

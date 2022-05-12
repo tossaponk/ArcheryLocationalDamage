@@ -21,6 +21,7 @@ extern float g_fShotDifficultyTimeFactor;
 extern float g_fShotDifficultyDistFactor;
 extern float g_fShotDifficultyMoveFactor;
 extern float g_fShotDifficultyMax;
+extern float g_fShotDifficultyReportMin;
 extern float g_fNormalMult;
 extern float g_fDamageMult;
 extern float g_fHPFactor;
@@ -54,7 +55,6 @@ void LocationalDamage::InitFormEditorIDMap()
 	logger::info( "Form editor ID loaded in {:0.2f} seconds", duration.count() );
 }
 
-static std::mutex mutex;
 void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::TESObjectREFR* a_target, RE::NiPoint3* a_location )
 {
 	if( a_projectile && a_target && !a_target->IsDead() &&
@@ -99,9 +99,7 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 		
 		if( hitPart )
 		{
-			// Floating damage UI invocation cannot be done simutaneously from multiple threads.
-			std::lock_guard<std::mutex> lock( mutex );
-
+			FloatingDamage floatingText;
 			HitDataOverride hitDataOverride;
 			auto targetActor		= (RE::Actor*)a_target;
 			bool locationHit		= false;
@@ -202,7 +200,7 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 											shooterIsPlayer )
 										{
 											// Switch to screen notification if failed
-											if( !FloatingDamage::CreateFloatingText( 
+											if( !floatingText.AddText( 
 												messageFloating->c_str(), 
 												targetIsPlayer ? locationalSetting.floatingColorSelf : locationalSetting.floatingColorEnemy, 
 												locationalSetting.floatingSize ) )
@@ -258,7 +256,7 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 									{
 										if( (targetIsPlayer || shooterIsPlayer) ||
 											g_bNPCFloatingNotification )
-											FloatingDamage::CreateFloatingText( 
+											floatingText.AddText( 
 												magicItem->GetName(), 
 												targetIsPlayer ? locationalSetting.floatingColorSelf : locationalSetting.floatingColorEnemy, 
 												locationalSetting.floatingSize );
@@ -296,14 +294,16 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 					expMult *= shotDifficulty;
 				}
 
-				if( g_nEXPNotificationMode != NotificationMode::None && ( g_bEnableDifficultyBonus || g_bEnableLocationMultiplier ) )
+				if( g_nEXPNotificationMode != NotificationMode::None && 
+					( g_bEnableDifficultyBonus || g_bEnableLocationMultiplier ) &&
+					expMult >= g_fShotDifficultyReportMin )
 				{
 					auto reportStr = fmt::format( "Shot difficulty: {:0.1f}", expMult );
 					bool shouldShowNotification = 
 						g_nEXPNotificationMode == NotificationMode::Both || g_nEXPNotificationMode == NotificationMode::Screen;
 					if( g_nEXPNotificationMode == NotificationMode::Both || g_nEXPNotificationMode == NotificationMode::Floating )
 					{
-						if( !FloatingDamage::CreateFloatingText( reportStr.c_str(), 0xFF8000, 24) )
+						if( !floatingText.AddText( reportStr.c_str(), 0xFF8000, 24) )
 							shouldShowNotification = true;
 					}
 
@@ -335,7 +335,7 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 
 			// Flush floating text buffer
 			float alpha = (shooterIsPlayer || targetIsPlayer) ? 100.0f : 50.0f;
-			FloatingDamage::Flush( a_target, isFPS ? NULL : a_location, g_fFloatingOffsetX, g_fFloatingOffsetY, alpha, shooterIsPlayer );
+			floatingText.Draw( a_target, isFPS ? NULL : a_location, g_fFloatingOffsetX, g_fFloatingOffsetY, alpha, shooterIsPlayer );
 
 			if( g_bDebugNotification )
 			{

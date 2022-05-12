@@ -18,6 +18,7 @@ float g_fShotDifficultyTimeFactor = 1;
 float g_fShotDifficultyDistFactor = 1;
 float g_fShotDifficultyMoveFactor = 1;
 float g_fShotDifficultyMax = 15.0f;
+float g_fShotDifficultyReportMin = 1.1f;
 float g_fHPFactor = 0.25f;
 float g_fFloatingOffsetX = 0;
 float g_fFloatingOffsetY = 0.04f;
@@ -42,6 +43,7 @@ void Settings::Load()
 	g_fShotDifficultyDistFactor		= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyDistFactor", g_fShotDifficultyDistFactor );
 	g_fShotDifficultyMoveFactor		= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyMoveFactor", g_fShotDifficultyMoveFactor );
 	g_fShotDifficultyMax			= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyMax", g_fShotDifficultyMax );
+	g_fShotDifficultyReportMin		= (float)iniFile.GetDoubleValue( "Experience", "ShotDifficultyReportMin", g_fShotDifficultyReportMin );
 
 	g_bDebugNotification			= iniFile.GetBoolValue( "Settings", "DebugNotification", g_bDebugNotification );
 	g_bPlayerNotification			= iniFile.GetBoolValue( "Settings", "PlayerHitNotification", g_bPlayerNotification );

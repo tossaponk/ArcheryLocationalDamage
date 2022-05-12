@@ -2,7 +2,7 @@
 
 #include "Offsets.h"
 
-struct FloatingDamage
+class FloatingDamage
 {
 	struct DisplayText
 	{
@@ -94,11 +94,16 @@ struct FloatingDamage
 		}
 	};
 
+	std::vector<DisplayText> data;
+
+public:
+	bool AddText( const char* a_text, uint32_t a_color, uint32_t a_size );
+
+	void Draw( RE::TESObjectREFR* a_target, RE::NiPoint3* a_location, float a_offsetX, float a_offsetY, float a_alpha = 100, bool a_ignoreLOS = false );
+
+	void Reset() { data.clear(); };
+
 	static void Initialize( REL::Version a_ver );
 
 	static RE::GFxMovie* GetMenu();
-
-	static bool CreateFloatingText( const char* a_text, uint32_t a_color, uint32_t a_size );
-
-	static void Flush( RE::TESObjectREFR* a_target, RE::NiPoint3* a_location, float a_offsetX, float a_offsetY, float a_alpha = 100, bool a_ignoreLOS = false );
 };
