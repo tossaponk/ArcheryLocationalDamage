@@ -117,7 +117,7 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 					std::regex_match( hitPart->name.c_str(), locationalSetting.regexp ) )
 				{
 					// Success chance check
-					int finalSuccessChance = 100;
+					int finalSuccessChance = locationalSetting.successChance;
 
 					// Compute HP factor
 					if( locationalSetting.successHPFactor != 0 )
@@ -127,7 +127,7 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 					}
 					
 					if( RandomPercent( finalSuccessChance ) &&
-						locationalSetting.filter.IsActorVaild( targetActor, &formEditorIDMap ) )
+						locationalSetting.filter.IsVaild( targetActor, a_projectile, &formEditorIDMap ) )
 					{
 						hitDataOverride.aggressor	= shooterActor;
 						hitDataOverride.target		= a_target;

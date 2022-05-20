@@ -106,6 +106,7 @@ void Settings::Load()
 				setting.filter.sex = RE::SEX::kNone;
 			
 			setting.filter.editorID	= CreateRegex( iniFile.GetValue( sectionIter.pItem, "EditorID", "" ) );
+			setting.filter.ammoType	= (AmmoType)iniFile.GetLongValue( sectionIter.pItem, "AmmoType", 0 );
 
 			auto section = iniFile.GetSection( sectionIter.pItem );
 
@@ -115,7 +116,9 @@ void Settings::Load()
 			{
 				std::string currentKey = iter->first.pItem;
 
-				if( currentKey == "EffectName" )
+				if( currentKey == "Effect" )
+					ParseLocationEffect( setting, iter->second );
+				else if( currentKey == "EffectName" )
 					SetLocationEffect( setting, effectIdx++, iter->second );
 				else if( currentKey == "EffectChance" )
 					SetLocationChance( setting, chanceIdx++, atoi( iter->second ) );

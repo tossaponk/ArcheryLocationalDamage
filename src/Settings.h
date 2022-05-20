@@ -35,7 +35,7 @@ struct Settings
 		std::string						impactData;
 		std::regex						regexp;
 		std::vector<Effect>				effects;
-		ActorFilter						filter;
+		TargetFilter					filter;
 
 		Location()
 		{
@@ -55,6 +55,8 @@ struct Settings
 				filter.type = StringFilter::Type::kEquipKeyword;
 			else if( filterOption[ 0 ] == "M" )
 				filter.type = StringFilter::Type::kMagicKeyword;
+			else if( filterOption[ 0 ] == "S" )
+				filter.type = StringFilter::Type::kShooterKeyword;
 			else
 				stl::report_and_fail( fmt::format( "Unknown keyword type: {}.", filterOption[ 0 ]).c_str() );
 
@@ -104,6 +106,22 @@ struct Settings
 			a_setting.effects.resize( a_index + 1 );
 
 		a_setting.effects[ a_index ].effectChance = a_chance;
+	}
+
+	static void ParseLocationEffect( Location& a_setting, const char* a_str )
+	{
+		auto effectSetting = split( a_str, "[\\s%]+" );
+		if( effectSetting.size() == 2 )
+		{
+			Location::Effect effect;
+			effect.effectChance = atoi( effectSetting[ 0 ].c_str() );
+			effect.effectID		= effectSetting[ 1 ];
+			a_setting.effects.push_back( effect );
+
+			return;
+		}
+
+		stl::report_and_fail( "Invalid effect format" );
 	}
 
 	static void Load();
