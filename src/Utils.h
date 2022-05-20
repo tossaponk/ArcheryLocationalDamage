@@ -17,7 +17,7 @@ struct StringFilter
 		kActorKeyword,
 		kEquipKeyword,
 		kMagicKeyword,
-		kShooterKeyword,
+		kWeaponKeyword,
 
 		kTotal
 	};
@@ -48,7 +48,7 @@ class StringFilterList
 		kActorKeyword	= 1 << (uint32_t)StringFilter::Type::kActorKeyword,
 		kEquipKeyword	= 1 << (uint32_t)StringFilter::Type::kEquipKeyword,
 		kMagicKeyword	= 1 << (uint32_t)StringFilter::Type::kMagicKeyword,
-		kShooterKeyword = 1 << (uint32_t)StringFilter::Type::kShooterKeyword,
+		kWeaponKeyword	= 1 << (uint32_t)StringFilter::Type::kWeaponKeyword,
 	};
 
 	std::vector<StringFilter>		data;
@@ -179,18 +179,18 @@ public:
 		return lookupFilter.size() == 0;
 	}
 
-	bool ShooterHasKeyword( RE::Projectile* a_projectile )
+	bool WeaponHasKeyword( RE::Projectile* a_projectile )
 	{
 		if( a_projectile == nullptr )
 			return false;
 
-		if( !HasFilterType( StringFilter::Type::kShooterKeyword ) )
+		if( !HasFilterType( StringFilter::Type::kWeaponKeyword ) )
 			return true;
 
 		std::vector<StringFilter*> lookupFilter;
 		for( auto& filter : data )
 		{
-			if( filter.type == StringFilter::Type::kShooterKeyword )
+			if( filter.type == StringFilter::Type::kWeaponKeyword )
 				lookupFilter.push_back( &filter );
 		}
 
@@ -215,13 +215,13 @@ public:
 		bool isActorHasKeyword	= ActorHasKeywords( a_actor );
 		bool isArmorHasKeyword	= ArmorHasKeywords( a_actor );
 		bool isMagicHasKeyword	= ActiveEffectsHasKeywords( a_actor );
-		bool isSourceHasKeyword	= ShooterHasKeyword( a_source );
+		bool isWeaponHasKeyword	= WeaponHasKeyword( a_source );
 
-		return isActorHasKeyword && isArmorHasKeyword && isMagicHasKeyword && isSourceHasKeyword;
+		return isActorHasKeyword && isArmorHasKeyword && isMagicHasKeyword && isWeaponHasKeyword;
 	}
 };
 
-struct TargetFilter
+struct ActorFilter
 {
 	AmmoType						ammoType;
 	std::regex						editorID;
@@ -232,7 +232,7 @@ struct TargetFilter
 	std::vector<std::regex>			raceExclude;
 
 	// Editor ID map must be provided to filter by form editor ID
-	bool IsVaild( RE::Actor* a_target, RE::Projectile* a_source, std::unordered_map<RE::FormID,std::string>* a_editorIDMap = NULL )
+	bool IsVaild( RE::Actor* a_actor, RE::Projectile* a_source, std::unordered_map<RE::FormID,std::string>* a_editorIDMap = NULL )
 	{
 		// Default to true if there is no filter.
 		bool isVaild = keywordInclude.size() == 0;
@@ -240,7 +240,7 @@ struct TargetFilter
 		// Check if the actor actually has a keyword
 		for( auto& filter : keywordInclude )
 		{
-			if( filter.Evaluate( a_target, a_source ) )
+			if( filter.Evaluate( a_actor, a_source ) )
 			{
 				isVaild = true;
 				break;
@@ -252,7 +252,7 @@ struct TargetFilter
 		{
 			for( auto& filter : keywordExclude )
 			{
-				if( filter.Evaluate( a_target, a_source ) )
+				if( filter.Evaluate( a_actor, a_source ) )
 				{
 					isVaild = false;
 					break;
@@ -264,7 +264,7 @@ struct TargetFilter
 		if( isVaild && raceInclude.size() > 0 )
 		{
 			isVaild = false;
-			auto race = a_target->GetRace();
+			auto race = a_actor->GetRace();
 			for( auto& filter : raceInclude )
 			{
 				isVaild = std::regex_match( race->GetFullName(), filter );
@@ -276,7 +276,7 @@ struct TargetFilter
 
 		if( isVaild && raceExclude.size() > 0 )
 		{
-			auto race = a_target->GetRace();
+			auto race = a_actor->GetRace();
 			for( auto& filter : raceExclude )
 			{
 				isVaild = std::regex_match( race->GetFullName(), filter );
@@ -289,7 +289,7 @@ struct TargetFilter
 		// Check for sex
 		if( isVaild && sex != RE::SEX::kNone )
 		{
-			auto targetSex = a_target->GetActorBase()->GetSex();
+			auto targetSex = a_actor->GetActorBase()->GetSex();
 			if( targetSex != RE::SEX::kNone )
 				isVaild = targetSex == sex;
 		}
@@ -299,7 +299,7 @@ struct TargetFilter
 		{
 			if( a_editorIDMap )
 			{
-				auto base = a_target->GetActorBase();
+				auto base = a_actor->GetActorBase();
 				if( base )
 				{
 					auto baseRoot = base->GetRootFaceNPC();

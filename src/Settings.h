@@ -35,12 +35,8 @@ struct Settings
 		std::string						impactData;
 		std::regex						regexp;
 		std::vector<Effect>				effects;
-		TargetFilter					filter;
-
-		Location()
-		{
-			effects.resize( 5 );
-		}
+		ActorFilter						targetFilter;
+		ActorFilter						shooterFilter;
 	};
 
 	static StringFilter CreateFilterFromString( const char* a_filter )
@@ -55,8 +51,8 @@ struct Settings
 				filter.type = StringFilter::Type::kEquipKeyword;
 			else if( filterOption[ 0 ] == "M" )
 				filter.type = StringFilter::Type::kMagicKeyword;
-			else if( filterOption[ 0 ] == "S" )
-				filter.type = StringFilter::Type::kShooterKeyword;
+			else if( filterOption[ 0 ] == "W" )
+				filter.type = StringFilter::Type::kWeaponKeyword;
 			else
 				stl::report_and_fail( fmt::format( "Unknown keyword type: {}.", filterOption[ 0 ]).c_str() );
 

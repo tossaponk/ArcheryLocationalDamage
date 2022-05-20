@@ -101,12 +101,21 @@ void Settings::Load()
 
 			auto sex = iniFile.GetValue( sectionIter.pItem, "Sex", "" );
 			if( sex[ 0 ] != '\0' )
-				setting.filter.sex = _strcmpi( sex, "M" ) == 0 ? RE::SEX::kMale : RE::SEX::kFemale;
+				setting.targetFilter.sex = _strcmpi( sex, "M" ) == 0 ? RE::SEX::kMale : RE::SEX::kFemale;
 			else
-				setting.filter.sex = RE::SEX::kNone;
+				setting.targetFilter.sex = RE::SEX::kNone;
+
+			auto shooterSex = iniFile.GetValue( sectionIter.pItem, "ShooterSex", "" );
+			if( shooterSex[ 0 ] != '\0' )
+				setting.shooterFilter.sex = _strcmpi( shooterSex, "M" ) == 0 ? RE::SEX::kMale : RE::SEX::kFemale;
+			else
+				setting.shooterFilter.sex = RE::SEX::kNone;
 			
-			setting.filter.editorID	= CreateRegex( iniFile.GetValue( sectionIter.pItem, "EditorID", "" ) );
-			setting.filter.ammoType	= (AmmoType)iniFile.GetLongValue( sectionIter.pItem, "AmmoType", 0 );
+			setting.targetFilter.editorID	= CreateRegex( iniFile.GetValue( sectionIter.pItem, "EditorID", "" ) );
+			setting.targetFilter.ammoType	= (AmmoType)iniFile.GetLongValue( sectionIter.pItem, "AmmoType", 0 );
+
+			setting.shooterFilter.editorID	= CreateRegex( iniFile.GetValue( sectionIter.pItem, "ShooterEditorID", "" ) );
+			setting.shooterFilter.ammoType	= setting.targetFilter.ammoType; // Ammo type is the same for both filters
 
 			auto section = iniFile.GetSection( sectionIter.pItem );
 
@@ -123,13 +132,21 @@ void Settings::Load()
 				else if( currentKey == "EffectChance" )
 					SetLocationChance( setting, chanceIdx++, atoi( iter->second ) );
 				else if( currentKey == "KeywordInclude" && *iter->second != 0 )
-					ExtractFilterStrings( setting.filter.keywordInclude, iter->second );
+					ExtractFilterStrings( setting.targetFilter.keywordInclude, iter->second );
 				else if( currentKey == "KeywordExclude" && *iter->second != 0 )
-					ExtractFilterStrings( setting.filter.keywordExclude, iter->second );
+					ExtractFilterStrings( setting.targetFilter.keywordExclude, iter->second );
+				else if( currentKey == "ShooterKeywordInclude" && *iter->second != 0 )
+					ExtractFilterStrings( setting.shooterFilter.keywordInclude, iter->second );
+				else if( currentKey == "ShooterKeywordExclude" && *iter->second != 0 )
+					ExtractFilterStrings( setting.shooterFilter.keywordExclude, iter->second );
 				else if( currentKey == "RaceInclude" && *iter->second != 0 )
-					setting.filter.raceInclude.push_back( CreateRegex( iter->second ) );
+					setting.targetFilter.raceInclude.push_back( CreateRegex( iter->second ) );
 				else if( currentKey == "RaceExclude" && *iter->second != 0 )
-					setting.filter.raceExclude.push_back( CreateRegex( iter->second ) );
+					setting.targetFilter.raceExclude.push_back( CreateRegex( iter->second ) );
+				else if( currentKey == "ShooterRaceInclude" && *iter->second != 0 )
+					setting.shooterFilter.raceInclude.push_back( CreateRegex( iter->second ) );
+				else if( currentKey == "ShooterRaceExclude" && *iter->second != 0 )
+					setting.shooterFilter.raceExclude.push_back( CreateRegex( iter->second ) );
 			}
 
 			g_LocationalDamageSettings.push_back( setting );

@@ -127,7 +127,8 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 					}
 					
 					if( RandomPercent( finalSuccessChance ) &&
-						locationalSetting.filter.IsVaild( targetActor, a_projectile, &formEditorIDMap ) )
+						locationalSetting.targetFilter.IsVaild( targetActor, a_projectile, &formEditorIDMap ) &&
+						locationalSetting.shooterFilter.IsVaild( shooterActor, a_projectile, &formEditorIDMap ) )
 					{
 						hitDataOverride.aggressor	= shooterActor;
 						hitDataOverride.target		= a_target;
