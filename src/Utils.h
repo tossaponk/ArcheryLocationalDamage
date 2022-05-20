@@ -201,28 +201,8 @@ public:
 
 		for( auto iter = lookupFilter.begin(); iter != lookupFilter.end(); )
 		{
-			bool hasKeyword = true;
-			for( auto& keyword : (*iter)->data )
-			{
-				bool weapHasKeyword	= weapon->HasKeywordString( keyword.str );
-				bool ammoHasKeyword	= ammo->HasKeywordString( keyword.str );
-				if( keyword.isNegate )
-				{
-					weapHasKeyword	= !weapHasKeyword;
-					ammoHasKeyword	= !ammoHasKeyword;
-				}
-						
-				if( !weapHasKeyword && !ammoHasKeyword )
-				{
-					hasKeyword = false;
-					break;
-				}
-			}
-
-			if( hasKeyword )
-			{
+			if( FormHasKeywords( weapon, **iter ) || FormHasKeywords( ammo, **iter ) )
 				iter = lookupFilter.erase( iter );
-			}
 			else
 				++iter;
 		}
