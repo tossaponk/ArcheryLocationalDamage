@@ -96,6 +96,9 @@ void Settings::Load()
 			setting.sound				= iniFile.GetValue( sectionIter.pItem, "HitSound", "" );
 			auto regexp					= iniFile.GetValue( sectionIter.pItem, "Regexp", "" );
 
+			// Copy condition from perk if specified
+			setting.perkConditionCopy	= iniFile.GetValue( sectionIter.pItem, "UsePerkCondition", "" );
+
 			setting.enable		= regexp[ 0 ] != NULL;
 			setting.regexp		= CreateRegex( regexp );
 

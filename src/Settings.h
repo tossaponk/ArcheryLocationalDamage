@@ -37,6 +37,8 @@ struct Settings
 		std::vector<Effect>				effects;
 		ActorFilter						targetFilter;
 		ActorFilter						shooterFilter;
+		std::string						perkConditionCopy;
+		RE::TESCondition*				condition = nullptr;
 	};
 
 	static StringFilter CreateFilterFromString( const char* a_filter )

@@ -17,6 +17,8 @@ struct LocationalDamage
 
 	static void ApplyLocationalDamage( RE::Projectile* a_projectile, RE::TESObjectREFR* a_target, RE::NiPoint3* a_location );
 
+	static void InitPerkConditions();
+
 	static bool RandomPercent( int percent )
 	{
 		return rand() % 100 <= percent;

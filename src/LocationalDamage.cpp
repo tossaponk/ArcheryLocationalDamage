@@ -55,6 +55,21 @@ void LocationalDamage::InitFormEditorIDMap()
 	logger::info( "Form editor ID loaded in {:0.2f} seconds", duration.count() );
 }
 
+void LocationalDamage::InitPerkConditions()
+{
+	for( auto& location : g_LocationalDamageSettings )
+	{
+		if( location.perkConditionCopy != "" )
+		{
+			auto perk = RE::TESForm::LookupByEditorID<RE::BGSPerk>( location.perkConditionCopy );
+			if( perk )
+				location.condition = &perk->perkConditions;
+			else
+				RE::ConsoleLog::GetSingleton()->Print( "Archery Locational Damage: Cannot find perk '%s' to copy condition from.", location.perkConditionCopy.c_str() );
+		}
+	}
+}
+
 void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::TESObjectREFR* a_target, RE::NiPoint3* a_location )
 {
 	if( a_projectile && a_target && !a_target->IsDead() &&
@@ -128,7 +143,8 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 					
 					if( RandomPercent( finalSuccessChance ) &&
 						locationalSetting.targetFilter.IsVaild( targetActor, a_projectile, &formEditorIDMap ) &&
-						locationalSetting.shooterFilter.IsVaild( shooterActor, a_projectile, &formEditorIDMap ) )
+						locationalSetting.shooterFilter.IsVaild( shooterActor, a_projectile, &formEditorIDMap ) &&
+						( locationalSetting.condition == nullptr || locationalSetting.condition->IsTrue( shooterActor, targetActor ) ) )
 					{
 						hitDataOverride.aggressor	= shooterActor;
 						hitDataOverride.target		= a_target;
