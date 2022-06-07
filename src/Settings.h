@@ -29,6 +29,7 @@ struct Settings
 		unsigned int					floatingColorEnemy = 0xFFC800;
 		unsigned int					floatingColorSelf = 0xFF4040;
 		int								floatingSize = 24;
+		std::string						id;
 		std::string						message;
 		std::string						messageFloating;
 		std::string						sound;

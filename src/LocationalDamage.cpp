@@ -146,6 +146,9 @@ void LocationalDamage::ApplyLocationalDamage( RE::Projectile* a_projectile, RE::
 						locationalSetting.shooterFilter.IsVaild( shooterActor, a_projectile, &formEditorIDMap ) &&
 						( locationalSetting.condition == nullptr || locationalSetting.condition->IsTrue( shooterActor, targetActor ) ) )
 					{
+#ifndef NDEBUG
+						RE::ConsoleLog::GetSingleton()->Print( "ALD: %s triggered", locationalSetting.id.c_str() );
+#endif
 						hitDataOverride.aggressor	= shooterActor;
 						hitDataOverride.target		= a_target;
 						hitDataOverride.location	= *a_location;

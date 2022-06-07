@@ -267,7 +267,7 @@ struct ActorFilter
 			auto race = a_actor->GetRace();
 			for( auto& filter : raceInclude )
 			{
-				isVaild = std::regex_match( race->GetFullName(), filter );
+				isVaild = std::regex_match( race->GetFormEditorID(), filter );
 
 				if( isVaild )
 					break;
@@ -279,7 +279,7 @@ struct ActorFilter
 			auto race = a_actor->GetRace();
 			for( auto& filter : raceExclude )
 			{
-				isVaild = std::regex_match( race->GetFullName(), filter );
+				isVaild = !std::regex_match( race->GetFormEditorID(), filter );
 
 				if( !isVaild )
 					break;

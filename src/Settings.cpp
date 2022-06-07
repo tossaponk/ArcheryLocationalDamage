@@ -80,6 +80,7 @@ void Settings::Load()
 		{
 			Location setting;
 
+			setting.id					= sectionIter.pItem;
 			setting.shouldContinue		= iniFile.GetBoolValue( sectionIter.pItem, "Continue", false );
 			setting.damageMult			= (float)iniFile.GetDoubleValue( sectionIter.pItem, "Multiplier", 1.0 );
 			setting.difficulty			= (float)iniFile.GetDoubleValue( sectionIter.pItem, "Difficulty", setting.damageMult );
